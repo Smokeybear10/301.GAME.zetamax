@@ -1,0 +1,45 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  createDrill,
+  type Drill,
+  type DrillState,
+} from "@/lib/drill";
+
+/**
+ * React hook wrapping the drill engine.
+ *
+ * Re-renders on every animation frame so the timer display updates smoothly.
+ * Despite the per-frame render, the drill engine itself does no React work —
+ * its state lives in a closure, getState() is O(1), and the input field updates
+ * are imperative (bypassing React's reconciler).
+ *
+ * Pass a stable seed string. When seed or durationMs changes, a fresh drill
+ * is created (state resets).
+ */
+export function useDrill(
+  seed: string,
+  durationMs?: number,
+): { state: DrillState; drill: Drill } {
+  const drill = useMemo(
+    () => createDrill({ seed, durationMs }),
+    [seed, durationMs],
+  );
+
+  // tick is a force-render counter; we don't use its value
+  const [, forceRender] = useState(0);
+
+  useEffect(() => {
+    let raf = 0;
+    const frame = () => {
+      drill.tick();
+      forceRender((n) => n + 1);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [drill]);
+
+  return { state: drill.getState(), drill };
+}
