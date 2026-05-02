@@ -217,6 +217,68 @@ can you actually make a seperate md including all the prompts ive given you to g
 can you give me the actual prompts
 ```
 
+## 8. Post-planning, pre-code
+
+```
+ook what gstack stuff shohuld i use now
+```
+
+(Claude says: nothing right now. Go pick a name + run kill gates. Optionally `/cso` and `/design-shotgun` while you wait.)
+
+```
+Name tentatively is zetaprime i already hav my firends come in
+```
+
+(Friends already in = demand validation effectively passed. Claude checks domain availability via whois/dig.)
+
+```
+no need to make nthe app rn i just want to do loclhost
+```
+
+(Skip domain registration. Localhost-only dev for now.)
+
+```
+explain /freeze and /guard
+```
+
+(Tooling question — informational, not actionable.)
+
+```
+tell me what i should do then
+```
+
+```
+what is scaffolding
+```
+
+```
+i wnat this to be localhost 2301 default
+```
+
+```
+get started with scaffolding
+```
+
+(Claude inspects the directory and discovers an existing Next.js + Supabase scaffold already created the night before. Halts before scaffolding over it.)
+
+```
+do C
+```
+
+### Pick made via AskUserQuestion (cleanup options)
+
+| Question | Answer |
+|----------|--------|
+| Cleanup | Option C: rename folder Zetamac → Zetaprime, move scaffold contents up, single git repo at root |
+
+(Claude executes the 7-step cleanup. Sets dev script to `next dev -p 2301`. Single initial commit with both planning docs and code.)
+
+```
+before you do that update the playbook prompt md files
+```
+
+(this prompt — the user wants the framework files updated to reflect post-planning cleanup before any code is written)
+
 ---
 
 ## Reusable template (strip the project-specific stuff)
