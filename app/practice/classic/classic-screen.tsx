@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Problem, RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
@@ -37,15 +38,27 @@ function formatTime(ms: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function PracticeScreen() {
+export function ClassicScreen() {
   const { config, setConfig } = usePracticeConfig();
   const [drillKey, setDrillKey] = useState(0);
+  const [nonce, setNonce] = useState<string>("seed");
   const [showSettings, setShowSettings] = useState(false);
 
-  // Seed is counter-based (no Date.now()) so SSR and CSR render the same
-  // initial state and don't trigger a hydration mismatch. Each "Drill again"
-  // increments drillKey and produces a fresh seeded problem stream.
-  const seed = `practice-${drillKey}`;
+  // Per-page-load random nonce, generated in an effect so SSR and the first
+  // client render see the same stable value ("seed") — no hydration mismatch.
+  // After mount the nonce flips to a fresh random value, so reloads produce a
+  // brand-new problem stream instead of replaying the previous session's.
+  useEffect(() => {
+    const fresh =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setNonce(fresh);
+  }, []);
+
+  // drillKey advances on every "Drill again" so consecutive rounds within a
+  // session also get different problem streams.
+  const seed = `practice-${nonce}-${drillKey}`;
   const { state, drill } = useDrill(
     seed,
     config.durationMs,
@@ -87,8 +100,8 @@ export function PracticeScreen() {
     if (state.status !== "ended" || savedRef.current) return;
     savedRef.current = true;
     const result: RoundResult = drill.end();
-    if (result.problemsAttempted > 0) saveRun(result);
-  }, [state.status, drill]);
+    if (result.problemsAttempted > 0) saveRun("classic", seed, config.generator, result);
+  }, [state.status, drill, seed, config.generator]);
 
   const settingsAccessible = state.status !== "running";
 
@@ -150,6 +163,21 @@ export function PracticeScreen() {
           drill.handleKeystroke(key);
         }}
       />
+
+      {/* Back link — up to the mode picker. Mirrors the settings chip on the
+          opposite side. Hidden during a running drill so it can't distract or
+          be mis-clicked. */}
+      {settingsAccessible && (
+        <Link
+          href="/practice"
+          aria-label="Back to practice modes"
+          title="Practice modes"
+          className="fixed top-3 left-3 sm:top-auto sm:bottom-6 sm:left-6 flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/65 hover:text-white hover:bg-white/[0.08] hover:border-white/30 transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
+        >
+          <span aria-hidden="true">←</span>
+          <span className="hidden sm:inline">modes</span>
+        </Link>
+      )}
 
       {/* Settings — labeled chip, only visible when not drilling. Top-right on
           mobile (where the keypad fills the bottom), bottom-right on desktop. */}

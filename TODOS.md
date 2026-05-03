@@ -44,6 +44,41 @@ These were in the CEO-review MVP but moved out after the eng review snap-back to
 - **What:** No clock. Wrong answer or `>2.5s` answer (config-tunable) costs a life.
 - **Effort:** S.
 
+### Daily Challenge mode
+- **What:** Deterministic seed shared by all friends today (24-hour window). Same exact problem set for the whole friend group; leaderboard sorts on this set.
+- **Why:** Strongest social hook on the modes list. "Did you do today's daily?" becomes the group chat ritual. Wordle-style social pull without Wordle's once-per-day gate — you can still drill freely outside the daily.
+- **Effort:** S (~hours). Hash today's date → seed; convention-based or `runs.daily_seed_id` column.
+- **Depends on:** v1 launch with `/competitive` leaderboard live.
+
+### Compound / chained-ops mode
+- **What:** Multi-op expressions with order-of-operations. `7 × 8 + 12 − 9 = ?`. Same exact-match validator; new generator that composes 2-3 op chains.
+- **Why:** Tests parsing + sequencing — different cognitive skill than single-op drills. Lands with the math/quant audience.
+- **Effort:** S. New generator family in `lib/drill/generator.ts`.
+
+### Quant Interview mode (foundation; curated firm banks stay in v5)
+- **What:** New problem family targeting the friend group's actual professional context: percentage estimation, log/exp, powers of 2, hex↔dec, modular arithmetic. Tolerance-based answers (`|answer − correct| ≤ tolerance`), not exact match.
+- **Why:** Differentiates Zetamax from generic Zetamac. Speaks directly to the math/quant friend group. Was deferred to v5 as "curated interview question banks (Optiver/SIG/Akuna/Flow)" — the paid-tier curation stays in v5; the foundational quant problem family lives here.
+- **Effort:** M. New generator + tolerance validator. Per-problem-type tolerance config.
+- **Depends on:** v1 launch.
+
+### Async Ghost Race
+- **What:** Pick a friend's run from the leaderboard; drill the same seed; their answer-by-answer timeline plays back live next to yours. "You: 32, Mike's ghost: 38" ticks in real time.
+- **Why:** Most novel mechanic on the v2 list. Synchronous-feeling competition without coordination — Mario Kart time-trial energy. Nobody else does it.
+- **Effort:** M (~half day). Replay UI on top of the v1 `client_payload` timestamps.
+- **Depends on:** v1 `runs.client_payload` includes per-problem timestamps. **Verify during v1 build that timestamp granularity is per-problem, not per-run** — retroactive backfill would cost a migration. (See also TODOS.md replay viewer note about adding the keystroke log to v1 now.)
+
+### Weekly tournament bracket
+- **What:** Friday-night elimination bracket among friends. Each round = a 120s drill. Lowest score eliminated. Final pairing crowns weekly champion.
+- **Why:** Scarcity-based hype loop. Recurring weekly event to anchor retention beyond daily drilling.
+- **Effort:** M-L. Bracket scheduling, per-round deadlines, automated advancement.
+- **Depends on:** v1 launch, daily leaderboard adoption, ≥4 active friends.
+
+### Streak counter + daily prompt
+- **What:** Days-in-a-row drill counter visible on `/competitive` (e.g. "🔥 12"). Optional browser push at 9pm if you haven't drilled today. Pairs with the existing "Streak shield UI" entry below.
+- **Why:** Cheapest retention mechanic in the book. Most likely answer to "how do friends come back day 2."
+- **Effort:** S. Track `last_drilled_date` on user; increment on consecutive days. Browser push adds ~half day.
+- **Depends on:** v1 launch.
+
 ### Weekly + all-time leaderboard tabs
 - **What:** v1 ships daily-only. v2 adds weekly + all-time tabs to `/leaderboard`.
 - **Why:** Office-hours premise #8 deferred these. Same underlying score data; low marginal cost once the daily tab is proven.
@@ -177,9 +212,9 @@ These were in the CEO-review MVP but moved out.
 - **Effort:** M.
 
 ### Curated interview question banks (Optiver, SIG, Akuna, Flow, etc.)
-- **What:** Per-firm distributions with their canonical scoring rules. Paid tier.
+- **What:** Per-firm distributions with their canonical scoring rules. Paid tier on top of the v2 Quant Interview foundation.
 - **Effort:** L. Each firm needs research + tuning.
-- **Depends on:** Stripe billing.
+- **Depends on:** v2 Quant Interview mode + Stripe billing.
 
 ### Replay-against-pro
 - **What:** Race a recorded pro's replay alongside your own.

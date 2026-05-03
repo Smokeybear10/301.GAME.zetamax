@@ -17,11 +17,11 @@ export default function Home() {
 
       {/* deck */}
       <p className="text-white/65 font-light text-center max-w-[32ch] leading-relaxed mb-20">
-        A timed mental-arithmetic drill. Two minutes. Open the page.
+        A timed mental-arithmetic drill.
       </p>
 
       {/* picker */}
-      <div className="flex gap-12 md:gap-16 items-stretch">
+      <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 md:gap-16 items-center sm:items-stretch">
         <Link
           href="/practice"
           className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
@@ -33,7 +33,7 @@ export default function Home() {
           <div className="text-xs text-white/42">no sign-in</div>
         </Link>
 
-        <div className="w-px bg-white/10 self-stretch" aria-hidden="true" />
+        <div className="hidden sm:block w-px bg-white/10 self-stretch" aria-hidden="true" />
 
         <Link
           href="/competitive"
@@ -45,12 +45,28 @@ export default function Home() {
           </div>
           <div className="text-xs text-white/42">with friends</div>
         </Link>
+
+        <div className="hidden sm:block w-px bg-white/10 self-stretch" aria-hidden="true" />
+
+        <Link
+          href="/practice/stats"
+          className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
+        >
+          <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">03</div>
+          <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 mb-2 transition-colors group-hover:border-white">
+            Stats
+          </div>
+          <div className="text-xs text-white/42">your runs</div>
+        </Link>
       </div>
 
-      {/* footer mark */}
-      <p className="absolute bottom-6 font-mono text-[10px] tracking-[0.32em] text-white/42 uppercase">
-        v1 · still cooking
-      </p>
+      {/* about — pinned to the bottom, lights up on hover */}
+      <Link
+        href="/about"
+        className="absolute bottom-6 px-7 py-2.5 border border-white/15 text-white/65 hover:text-white hover:border-white hover:bg-white/[0.04] transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
+      >
+        about
+      </Link>
     </main>
   );
 }

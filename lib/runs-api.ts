@@ -1,5 +1,5 @@
 /**
- * Shared types between client and server for the /api/runs/* routes.
+ * Shared types + thin client wrappers for the /api/runs/* routes.
  */
 import type { AnswerEvent } from "@/lib/drill";
 import type { ValidationStatus } from "@/lib/drill/validate";
@@ -33,3 +33,55 @@ export type FinishRunResponse = {
 export type FinishRunError = {
   error: "unauthorized" | "run not found" | "missing run_id or events" | "invalid json" | "could not finalize";
 };
+
+// ---------------------------------------------------------------------------
+// Client wrappers. Browser-only — run_id is the natural idempotency key, so
+// retries can replay the same finish request without server-side dedup work
+// (the route handler returns the cached result for non-pending runs).
+// ---------------------------------------------------------------------------
+
+const FINISH_RETRY_DELAYS_MS = [0, 5_000, 30_000];
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    const code = detail?.error ?? `http_${res.status}`;
+    throw new Error(code);
+  }
+  return res.json();
+}
+
+export async function startRun(): Promise<StartRunResponse> {
+  return postJson<StartRunResponse>("/api/runs/start", {});
+}
+
+/**
+ * Submit a finished run. Retries on network failures (offline, DNS, abort);
+ * does NOT retry on server-issued errors — those mean the server already
+ * decided. Each retry replays the same body; the run_id makes it idempotent.
+ */
+export async function finishRun(body: FinishRunRequest): Promise<FinishRunResponse> {
+  let lastError: unknown = null;
+  for (const delay of FINISH_RETRY_DELAYS_MS) {
+    if (delay > 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    }
+    try {
+      return await postJson<FinishRunResponse>("/api/runs/finish", body);
+    } catch (e) {
+      // TypeError = network failure (offline, DNS, fetch aborted). Retry.
+      // Anything else came from the server — bubble up immediately.
+      if (e instanceof TypeError) {
+        lastError = e;
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw (lastError instanceof Error ? lastError : new Error("network_failure"));
+}

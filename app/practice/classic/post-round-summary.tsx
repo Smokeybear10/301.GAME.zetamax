@@ -102,7 +102,7 @@ export function PostRoundSummary({ result, onPlayAgain }: Props) {
 
       <Link
         href="/competitive"
-        className="absolute bottom-6 font-mono text-[10px] tracking-[0.18em] text-white/30 hover:text-white/65 uppercase transition-colors zp-fade zp-fade-5"
+        className="absolute bottom-6 font-mono text-[10px] tracking-[0.18em] text-white/30 hover:text-white/65 uppercase transition-colors whitespace-nowrap zp-fade zp-fade-5"
       >
         track against friends →
       </Link>
