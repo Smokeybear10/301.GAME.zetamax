@@ -24,8 +24,8 @@ const MODES: Mode[] = [
     num: "02",
     slug: "daily",
     title: "Daily",
-    subtitle: "soon — same seed, every friend, daily",
-    href: null,
+    subtitle: "one puzzle, every friend, every day",
+    href: "/competitive/daily",
   },
   {
     num: "03",
