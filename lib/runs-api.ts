@@ -4,6 +4,13 @@
 import type { AnswerEvent } from "@/lib/drill";
 import type { ValidationStatus } from "@/lib/drill/validate";
 
+export type StartRunRequest = {
+  /** Defaults to "ranked". */
+  mode?: "ranked" | "daily";
+  /** Required when mode = "daily". YYYY-MM-DD in America/New_York. */
+  daily_date?: string;
+};
+
 export type StartRunResponse = {
   run_id: string;
   seed: string;
@@ -13,7 +20,14 @@ export type StartRunResponse = {
 };
 
 export type StartRunError = {
-  error: "unauthorized" | "could not start run";
+  error:
+    | "unauthorized"
+    | "could not start run"
+    | "invalid mode"
+    | "invalid daily_date"
+    | "already_attempted";
+  /** Set when error="already_attempted" — gives the existing run's state. */
+  existing_status?: string;
 };
 
 export type FinishRunRequest = {
@@ -74,8 +88,22 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export async function startRun(): Promise<StartRunResponse> {
-  return postJson<StartRunResponse>("/api/runs/start", {});
+export async function startRun(
+  opts: StartRunRequest = {},
+): Promise<StartRunResponse> {
+  return postJson<StartRunResponse>("/api/runs/start", opts);
+}
+
+export async function forfeitRun(runId: string): Promise<void> {
+  // Best-effort beacon-style call. We don't surface failures to the user.
+  try {
+    await fetch(`/api/runs/forfeit/${encodeURIComponent(runId)}`, {
+      method: "POST",
+      keepalive: true,
+    });
+  } catch {
+    // ignore
+  }
 }
 
 /**

@@ -42,10 +42,22 @@ type Rating = {
   last_match_at: string | null;
 };
 
+type DailySummary = {
+  mean_score: number;
+  runs_completed: number;
+  runs_forfeited: number;
+  played_today: boolean;
+};
+
 type Phase =
   | { tag: "loading" }
   | { tag: "signed-out" }
-  | { tag: "ready"; user: AuthedUser; rating: Rating | null };
+  | {
+      tag: "ready";
+      user: AuthedUser;
+      rating: Rating | null;
+      daily: DailySummary | null;
+    };
 
 export function ProfileSection() {
   const [phase, setPhase] = useState<Phase>({ tag: "loading" });
@@ -69,13 +81,32 @@ export function ProfileSection() {
       const avatar_url =
         typeof meta.avatar_url === "string" ? meta.avatar_url : null;
 
-      const { data: ratingRow } = await supabase
-        .from("user_ratings")
-        .select("rating, peak_rating, matches_played, last_match_at")
-        .eq("user_id", u.id)
-        .maybeSingle();
+      const [{ data: ratingRow }, { data: dailyRows }] = await Promise.all([
+        supabase
+          .from("user_ratings")
+          .select("rating, peak_rating, matches_played, last_match_at")
+          .eq("user_id", u.id)
+          .maybeSingle(),
+        supabase.rpc("get_my_daily_summary"),
+      ]);
 
       if (cancelled) return;
+
+      const daily =
+        Array.isArray(dailyRows) && dailyRows.length > 0
+          ? ({
+              mean_score: Number(
+                (dailyRows[0] as { mean_score: number }).mean_score ?? 0,
+              ),
+              runs_completed: (dailyRows[0] as { runs_completed: number })
+                .runs_completed ?? 0,
+              runs_forfeited: (dailyRows[0] as { runs_forfeited: number })
+                .runs_forfeited ?? 0,
+              played_today: (dailyRows[0] as { played_today: boolean })
+                .played_today ?? false,
+            } satisfies DailySummary)
+          : null;
+
       setPhase({
         tag: "ready",
         user: {
@@ -86,6 +117,7 @@ export function ProfileSection() {
           avatar_url,
         },
         rating: ratingRow ?? null,
+        daily,
       });
     })();
     return () => {
@@ -112,6 +144,7 @@ export function ProfileSection() {
     <ProfileCard
       user={phase.user}
       rating={phase.rating}
+      daily={phase.daily}
       onUserChange={onUserChange}
     />
   );
@@ -143,10 +176,12 @@ function SignedOutCTA() {
 function ProfileCard({
   user,
   rating,
+  daily,
   onUserChange,
 }: {
   user: AuthedUser;
   rating: Rating | null;
+  daily: DailySummary | null;
   onUserChange: (next: AuthedUser) => void;
 }) {
   const provisional = (rating?.matches_played ?? 0) < 30;
@@ -199,12 +234,46 @@ function ProfileCard({
         )}
       </section>
 
+      <section>
+        <h2 className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-5">
+          Daily · last 30 days
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/10">
+          <Stat
+            label="mean"
+            value={
+              daily && daily.runs_completed > 0
+                ? Number(daily.mean_score).toFixed(1)
+                : "—"
+            }
+            highlight={!!(daily && daily.runs_completed > 0)}
+          />
+          <Stat label="completed" value={`${daily?.runs_completed ?? 0}`} />
+          <Stat label="forfeited" value={`${daily?.runs_forfeited ?? 0}`} />
+          <Stat
+            label="today"
+            value={daily?.played_today ? "done" : "open"}
+          />
+        </div>
+        {!daily?.played_today && (
+          <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 mt-4">
+            today&apos;s puzzle is still open
+          </p>
+        )}
+      </section>
+
       <section className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/competitive/ranked"
           className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors text-center"
         >
           Drill ranked
+        </Link>
+        <Link
+          href="/competitive/daily"
+          className="px-7 py-3 border border-white/15 text-white/65 hover:text-white hover:border-white text-sm transition-colors text-center"
+        >
+          Daily
         </Link>
         <Link
           href="/competitive/leagues"
