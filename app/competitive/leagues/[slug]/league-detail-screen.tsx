@@ -15,6 +15,9 @@ type LeaderboardRow = {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  rating: number;
+  peak_rating: number;
+  is_provisional: boolean;
   best_score: number;
   best_started_at: string | null;
   runs_played: number;
@@ -277,21 +280,41 @@ function ReadyPanel({
                       : "border-l-2 border-transparent -ml-[2px]"
                   }`}
                 >
-                  <span className="font-mono tabular-nums text-white/42 w-8 text-right">
+                  <span className="font-mono tabular-nums text-white/42 w-7 text-right">
                     {i + 1}
                   </span>
                   <span
-                    className={`flex-1 truncate ${
+                    className={`flex-1 min-w-0 truncate ${
                       isYou ? "text-white" : "text-white/85"
                     }`}
                   >
                     {isYou ? "You" : r.display_name ?? "Player"}
+                    {r.is_provisional && (
+                      <span
+                        title="Provisional — first 30 rated rounds"
+                        className="ml-1.5 text-[10px] align-middle"
+                      >
+                        🧪
+                      </span>
+                    )}
                   </span>
-                  <span className="font-mono tabular-nums text-white/42 text-[11px] tracking-[0.18em] uppercase whitespace-nowrap">
+                  <span
+                    className="hidden sm:inline font-mono tabular-nums text-white/42 text-[11px] whitespace-nowrap"
+                    title="Best score in last 30 days"
+                  >
+                    best {r.best_score}
+                  </span>
+                  <span
+                    className="hidden sm:inline font-mono tabular-nums text-white/42 text-[11px] whitespace-nowrap"
+                    title="Runs played in last 30 days"
+                  >
                     {r.runs_played} {r.runs_played === 1 ? "run" : "runs"}
                   </span>
-                  <span className="font-mono tabular-nums text-white text-lg w-12 text-right">
-                    {r.best_score}
+                  <span
+                    className="font-mono tabular-nums text-white text-lg w-14 text-right"
+                    title="ELO rating"
+                  >
+                    {r.rating}
                   </span>
                 </div>
               );

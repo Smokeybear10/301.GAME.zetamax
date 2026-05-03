@@ -16,6 +16,9 @@ type Row = {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  rating: number;
+  peak_rating: number;
+  is_provisional: boolean;
   best_score: number;
   best_started_at: string | null;
   runs_played: number;
@@ -188,17 +191,31 @@ export function LeaderboardPanel() {
                   {i + 1}
                 </span>
                 <span
-                  className={`flex-1 truncate ${
+                  className={`flex-1 min-w-0 truncate ${
                     isYou ? "text-white" : "text-white/85"
                   }`}
                 >
                   {isYou ? "You" : r.display_name ?? "Player"}
+                  {r.is_provisional && (
+                    <span
+                      title="Provisional — first 30 rated rounds"
+                      className="ml-1.5 text-[10px] align-middle"
+                    >
+                      🧪
+                    </span>
+                  )}
                 </span>
-                <span className="font-mono tabular-nums text-white/42 text-[10px] tracking-[0.18em] uppercase whitespace-nowrap">
-                  {r.runs_played}
-                </span>
-                <span className="font-mono tabular-nums text-white">
+                <span
+                  className="font-mono tabular-nums text-white/42 text-[10px]"
+                  title="Best in last 30 days"
+                >
                   {r.best_score}
+                </span>
+                <span
+                  className="font-mono tabular-nums text-white"
+                  title="ELO rating"
+                >
+                  {r.rating}
                 </span>
               </div>
             );

@@ -21,14 +21,13 @@ const SPARKLINE_WINDOW = 30;
 
 type Hydration = "loading" | "ready";
 
-export function StatsScreen() {
+export function StatsSection() {
   const [phase, setPhase] = useState<Hydration>("loading");
   const [rows, setRows] = useState<StoredRun[]>([]);
 
-  // Defer localStorage reads to a useEffect so SSR and first-paint markup
-  // match — same pattern as usePracticeConfig. Empty rows + "loading" phase
-  // is what shows during hydration; the empty state proper kicks in only
-  // after we've confirmed there really is nothing stored.
+  // Defer localStorage reads to a useEffect — same SSR-safe pattern as
+  // usePracticeConfig. Empty rows + "loading" phase shows during hydration;
+  // the empty state proper only fires once we've confirmed nothing's stored.
   useEffect(() => {
     setRows(getHistory());
     setPhase("ready");
@@ -67,75 +66,60 @@ export function StatsScreen() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      // Best-effort. Browsers without Blob support skip the export.
+      // best-effort
     }
   }, [rows]);
 
-  const isEmpty = phase === "ready" && rows.length === 0;
+  if (phase === "loading") {
+    return (
+      <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42">
+        loading…
+      </p>
+    );
+  }
+
+  if (rows.length === 0) {
+    return <EmptyState />;
+  }
 
   return (
-    <main className="min-h-screen bg-black text-white antialiased">
-      <div className="max-w-3xl mx-auto px-6 sm:px-8 py-10 sm:py-16">
-        <header className="flex items-center justify-between mb-10 sm:mb-14">
-          <div>
-            <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 mb-2">
-              Stats · practice
-            </p>
-            <h1 className="font-extralight text-3xl sm:text-4xl tracking-[-0.03em] leading-none">
-              Your runs
-            </h1>
-          </div>
-          <Link
-            href="/"
-            className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-          >
-            ← menu
-          </Link>
-        </header>
+    <div className="space-y-12 sm:space-y-14">
+      <Section label="Lifetime · practice">
+        <LifetimeStrip totals={aggregates.totals} />
+      </Section>
 
-        {isEmpty ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-12 sm:space-y-16">
-            <Section label="Lifetime">
-              <LifetimeStrip totals={aggregates.totals} />
-            </Section>
+      <Section label="Score">
+        <ScoreSparkline points={aggregates.points} />
+      </Section>
 
-            <Section label="Score">
-              <ScoreSparkline points={aggregates.points} />
-            </Section>
+      <Section label="By operation">
+        <OpBars summary={aggregates.byOp} />
+      </Section>
 
-            <Section label="By operation">
-              <OpBars summary={aggregates.byOp} />
-            </Section>
+      <Section label="Multiplication facts · 2–12">
+        <MulFactGrid facts={aggregates.facts} />
+      </Section>
 
-            <Section label={`Multiplication facts · ${2}–${12}`}>
-              <MulFactGrid facts={aggregates.facts} />
-            </Section>
-
-            <footer className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-8 border-t border-white/10">
-              <button
-                type="button"
-                onClick={handleExport}
-                className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/65 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
-              >
-                Export JSON
-              </button>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
-              >
-                Reset all stats
-              </button>
-              <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 sm:ml-auto sm:self-center">
-                stored locally · this device only
-              </p>
-            </footer>
-          </div>
-        )}
-      </div>
-    </main>
+      <footer className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-8 border-t border-white/10">
+        <button
+          type="button"
+          onClick={handleExport}
+          className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/65 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
+        >
+          Export JSON
+        </button>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
+        >
+          Reset all stats
+        </button>
+        <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 sm:ml-auto sm:self-center">
+          stored locally · this device only
+        </p>
+      </footer>
+    </div>
   );
 }
 
@@ -201,8 +185,8 @@ function EmptyState() {
         Drill a round to start building stats.
       </h2>
       <p className="text-white/65 max-w-md mx-auto leading-relaxed mb-10">
-        Per-operation accuracy, latency trends, and a multiplication-fact
-        heatmap — all computed locally from your rounds.
+        Per-operation accuracy, latency trends, and a multiplication-fact heatmap
+        — all computed locally from your rounds.
       </p>
       <Link
         href="/practice"

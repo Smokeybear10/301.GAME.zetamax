@@ -153,6 +153,7 @@ function SuccessPanel({
   onPlayAgain: () => void;
 }) {
   const validated = response.validation_status === "ok";
+  const elo = response.elo;
   return (
     <>
       <div className="font-black tracking-[-0.06em] leading-[0.85] text-[clamp(120px,22vw,320px)] mb-8 zp-fade zp-fade-2">
@@ -162,20 +163,93 @@ function SuccessPanel({
         {validated ? "Saved." : `Status: ${response.validation_status}`}
         {response.cached ? " (already saved)" : ""}
       </p>
-      <p className="font-mono text-[11px] text-white/42 mb-10 zp-fade zp-fade-3">
+      <p className="font-mono text-[11px] text-white/42 mb-8 zp-fade zp-fade-3">
         {Math.round(result.accuracy * 100)}% accuracy ·{" "}
         {Math.round(result.meanLatencyMs)}ms mean
       </p>
 
+      {elo && <EloDelta elo={elo} />}
+
       <div className="w-full max-w-md mb-10 zp-fade zp-fade-4">
         <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3 text-center">
-          Best · last 30 days
+          Rating · last 30 days
         </p>
         <LeaderboardPanel />
       </div>
 
       <Buttons onPlayAgain={onPlayAgain} />
     </>
+  );
+}
+
+function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
+  const sign = elo.rating_delta > 0 ? "+" : elo.rating_delta < 0 ? "" : "±";
+  const beforeRating = elo.new_rating - elo.rating_delta;
+  const tone =
+    elo.rating_delta > 0
+      ? "text-white"
+      : elo.rating_delta < 0
+        ? "text-white/65"
+        : "text-white/42";
+
+  if (elo.opponent_count === 0) {
+    return (
+      <div className="mb-10 zp-fade zp-fade-3 text-center">
+        <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42">
+          no rated opponents today · {elo.new_rating} elo
+          {elo.is_provisional ? " · 🧪 provisional" : ""}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-md mb-10 zp-fade zp-fade-3">
+      <div className="flex items-baseline justify-center gap-3 mb-3">
+        <span className={`font-mono tabular-nums text-2xl ${tone}`}>
+          {sign}
+          {Math.abs(elo.rating_delta)} ELO
+        </span>
+        <span className="font-mono text-[11px] tabular-nums text-white/42">
+          {beforeRating} → {elo.new_rating}
+        </span>
+        {elo.is_provisional && (
+          <span
+            title="Provisional — first 30 rated rounds"
+            className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42"
+          >
+            🧪
+          </span>
+        )}
+      </div>
+
+      <ul className="space-y-1 max-w-xs mx-auto">
+        {elo.breakdown.map((b) => {
+          const bSign = b.delta > 0 ? "+" : b.delta < 0 ? "" : "±";
+          const bTone =
+            b.delta > 0
+              ? "text-white"
+              : b.delta < 0
+                ? "text-white/65"
+                : "text-white/42";
+          return (
+            <li
+              key={b.opp_id}
+              className="grid grid-cols-[1fr_auto_auto] items-center gap-3 font-mono text-[11px]"
+            >
+              <span className="text-white/65 truncate">vs {b.opp_name}</span>
+              <span className={`tabular-nums ${bTone} w-12 text-right`}>
+                {bSign}
+                {Math.abs(b.delta)}
+              </span>
+              <span className="tabular-nums text-white/42 w-20 text-right">
+                {b.my_score}–{b.opp_score}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 

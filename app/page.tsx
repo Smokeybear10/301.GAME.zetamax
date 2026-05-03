@@ -49,14 +49,14 @@ export default function Home() {
         <div className="hidden sm:block w-px bg-white/10 self-stretch" aria-hidden="true" />
 
         <Link
-          href="/practice/stats"
+          href="/me"
           className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
         >
           <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">03</div>
           <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 mb-2 transition-colors group-hover:border-white">
-            Stats
+            Profile
           </div>
-          <div className="text-xs text-white/42">your runs</div>
+          <div className="text-xs text-white/42">elo + stats</div>
         </Link>
       </div>
 

@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
       { source: "/design/", destination: "/design/index.html" },
     ];
   },
+
+  // /practice/stats moved into /me as a tab. Permanent redirect for any
+  // bookmarks or shared links lingering from the old route.
+  async redirects() {
+    return [
+      { source: "/practice/stats", destination: "/me", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateRun } from "@/lib/drill/validate";
-import type { FinishRunRequest, FinishRunResponse } from "@/lib/runs-api";
+import type {
+  EloOpponentBreakdown,
+  FinishRunRequest,
+  FinishRunResponse,
+} from "@/lib/runs-api";
 
 export async function POST(req: NextRequest) {
   let body: FinishRunRequest;
@@ -110,5 +114,35 @@ export async function POST(req: NextRequest) {
     validation_status: updated.validation_status,
     score: updated.score ?? 0,
   };
+
+  // Apply per-round ELO update if the run validated cleanly. Failures here are
+  // non-fatal — the run is already saved; rating just won't move on this round.
+  if (updated.validation_status === "ok") {
+    const { data: eloRows, error: eloError } = await admin.rpc("apply_run_elo", {
+      p_run_id: body.run_id,
+    });
+    if (eloError) {
+      console.error("/api/runs/finish apply_run_elo failed:", eloError);
+    } else if (Array.isArray(eloRows) && eloRows.length > 0) {
+      const row = eloRows[0] as {
+        delta: number;
+        new_rating: number;
+        opponent_count: number;
+        is_provisional: boolean;
+        breakdown: unknown;
+      };
+      const breakdown: EloOpponentBreakdown[] = Array.isArray(row.breakdown)
+        ? (row.breakdown as EloOpponentBreakdown[])
+        : [];
+      result.elo = {
+        rating_delta: row.delta,
+        new_rating: row.new_rating,
+        opponent_count: row.opponent_count,
+        is_provisional: row.is_provisional,
+        breakdown,
+      };
+    }
+  }
+
   return NextResponse.json(result);
 }

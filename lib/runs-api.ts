@@ -23,11 +23,29 @@ export type FinishRunRequest = {
   completed_at_client?: string;
 };
 
+export type EloOpponentBreakdown = {
+  opp_id: string;
+  opp_name: string;
+  opp_score: number;
+  my_score: number;
+  delta: number;
+};
+
+export type EloUpdate = {
+  rating_delta: number;
+  new_rating: number;
+  opponent_count: number;
+  is_provisional: boolean;
+  breakdown: EloOpponentBreakdown[];
+};
+
 export type FinishRunResponse = {
   validation_status: ValidationStatus | "unknown";
   score: number;
   /** True if the result was already finalized; this response is the cached value. */
   cached?: boolean;
+  /** Present only when validation_status='ok' and apply_run_elo ran. */
+  elo?: EloUpdate;
 };
 
 export type FinishRunError = {
