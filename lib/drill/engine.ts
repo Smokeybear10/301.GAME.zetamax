@@ -5,6 +5,7 @@ import type {
   Keystroke,
   RoundResult,
 } from "./types";
+import { KEYBIND_DEFAULTS, ZETAMAC_DEFAULTS, maxAnswerDigits } from "./config";
 import { generateProblem } from "./generator";
 import { hashString } from "./rng";
 
@@ -36,6 +37,9 @@ export function createDrill(config: DrillConfig): Drill {
   const durationMs = config.durationMs ?? DEFAULT_DURATION_MS;
   const now = config.now ?? defaultNow;
   const seedHash = hashString(config.seed);
+  const generatorConfig = config.generatorConfig ?? ZETAMAC_DEFAULTS;
+  const maxDigits = maxAnswerDigits(generatorConfig);
+  const keybinds = config.keybinds ?? KEYBIND_DEFAULTS;
 
   const subs = new Set<(state: DrillState) => void>();
 
@@ -78,7 +82,7 @@ export function createDrill(config: DrillConfig): Drill {
   }
 
   function loadProblem(index: number): void {
-    internal.currentProblem = generateProblem(seedHash, index);
+    internal.currentProblem = generateProblem(seedHash, index, generatorConfig);
     internal.currentProblemIndex = index;
     internal.currentProblemShownAt = now();
     internal.typedAnswer = "";
@@ -155,14 +159,14 @@ export function createDrill(config: DrillConfig): Drill {
 
       const t = now() - internal.currentProblemShownAt!;
 
-      if (key === "Backspace") {
+      if (key === keybinds.delete) {
         internal.currentKeystrokes.push({ key, t });
         internal.typedAnswer = internal.typedAnswer.slice(0, -1);
         notify();
         return;
       }
 
-      if (key === "Enter") {
+      if (key === keybinds.submit) {
         internal.currentKeystrokes.push({ key, t });
         const correct =
           internal.typedAnswer === String(internal.currentProblem!.answer);
@@ -171,7 +175,7 @@ export function createDrill(config: DrillConfig): Drill {
         return;
       }
 
-      if (key === "Tab") {
+      if (key === keybinds.skip) {
         internal.currentKeystrokes.push({ key, t });
         commit(false);
         notify();
@@ -179,6 +183,7 @@ export function createDrill(config: DrillConfig): Drill {
       }
 
       if (/^\d$/.test(key)) {
+        if (internal.typedAnswer.length >= maxDigits) return;
         internal.currentKeystrokes.push({ key, t });
         internal.typedAnswer += key;
         if (internal.typedAnswer === String(internal.currentProblem!.answer)) {

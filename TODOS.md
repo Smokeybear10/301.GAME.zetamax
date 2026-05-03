@@ -11,18 +11,18 @@ Source of truth for deferred work. Updated 2026-05-02 after eng review snapped M
 These are not roadmap items. They are gates. The eng review will not let v1 implementation proceed until these resolve.
 
 ### B1. Pick a name and register a domain — DEFERRED (2026-05-02)
-- **Status:** Name decided (tentative): **Zetaprime**. Domain registration deferred — building on localhost first.
+- **Status:** Name decided (tentative): **Zetamax**. Domain registration deferred — building on localhost first.
 - **When to revisit:** before sharing with friends remotely. Until then, Google OAuth works with `http://localhost:2301` callbacks; Supabase local stack handles the DB. Domain matters when you want a friend to click a link from their own machine.
-- **Available candidates** (from the 2026-05-02 DNS check): `zetaprime.app` (~$15/yr, HTTPS-default), `zetaprime.io` (~$40/yr). Skip `zetaprime.com` (squatter-parked).
+- **Available candidates** (from the 2026-05-02 DNS check): `zetamax.app` (~$15/yr, HTTPS-default), `zetamax.io` (~$40/yr). Skip `zetamax.com` (squatter-parked).
 
 ### B2. Gate 1 — direct ask of 3 friends — DONE (effective)
 - **Status:** Friends are already in (per user 2026-05-02). Demand signal is positive.
 - **Note:** If you want a stronger sanity check, still send them the OpenQuant link (B3) — but if friends are pre-committed to your build, B3 becomes optional rather than gating.
 
 ### B3. Gate 2 — adjacent product test (OpenQuant) — OPTIONAL (downgraded)
-- **Status:** Was a hard gate when demand was unvalidated. With friends already bought into the Zetaprime build, the OpenQuant test is no longer a kill gate; it's a sanity check on differentiation. Run if you want, skip if not.
+- **Status:** Was a hard gate when demand was unvalidated. With friends already bought into the Zetamax build, the OpenQuant test is no longer a kill gate; it's a sanity check on differentiation. Run if you want, skip if not.
 - **What (if running):** Send 3 friends [openquant.co/math-game](https://openquant.co/math-game): "Want to play this together this week? It's already built." Watch for 3+ days.
-- **What it tells you (if running):** If they like OpenQuant, your Zetaprime differentiation thesis is whatever OpenQuant lacks. That informs the v1 polish bar. If they don't engage with OpenQuant, your friend-group thesis is even stronger than baseline.
+- **What it tells you (if running):** If they like OpenQuant, your Zetamax differentiation thesis is whatever OpenQuant lacks. That informs the v1 polish bar. If they don't engage with OpenQuant, your friend-group thesis is even stronger than baseline.
 
 ---
 

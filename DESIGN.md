@@ -1,16 +1,23 @@
-# Zetaprime — Design Doc (v1)
+# Zetamax — Design Doc (v1)
 
-> **Name (tentative): Zetaprime.** Demand validation passed — friends are already in. Domain registration pending: `zetaprime.com` is squatter-parked (skip). `zetaprime.app` and `zetaprime.io` returned no DNS records and are likely available; verify on a registrar (Cloudflare Registrar / Namecheap / Porkbun) before celebrating. Recommend `.app` for HTTPS-default + lower cost (~$15/yr vs ~$40/yr for `.io`).
+> **Name (tentative): Zetamax.** Demand validation passed — friends are already in. Domain registration pending: `zetamax.com` is squatter-parked (skip). `zetamax.app` and `zetamax.io` returned no DNS records and are likely available; verify on a registrar (Cloudflare Registrar / Namecheap / Porkbun) before celebrating. Recommend `.app` for HTTPS-default + lower cost (~$15/yr vs ~$40/yr for `.io`).
 
 ## What it is
 
-A persistent, multi-round mental-math drill with **friend leaderboards**. Open the page, drill 2 minutes, your best run today ranks against your friends. No daily gate. No once-per-day shame. Continuous, on-demand, async-shared. The Zetamac feel preserved, plus the only thing the user actually wants from his friend group: *to see his name above (or below) Mike's on the leaderboard*.
+Two modes, surfaced explicitly on a landing menu:
+
+- **Practice** — open page, drill, score saved locally. No sign-in. No backend calls. Exactly Zetamac. The default first-touch experience.
+- **Competitive** — sign in, friend leaderboards, server-validated runs, daily ranking. The social/retention layer.
+
+The drill itself is identical in both modes — same engine, same feel, same Zetamac-compatible defaults. What differs is what happens **after** the round: Practice writes to localStorage and stops; Competitive submits to the server and updates the leaderboard.
 
 ## Why
 
 The user's math/engineering/quant friend group already drills mental math solo. They each play Zetamac (or equivalent) alone. There is no shared math activity today. The product invents a new behavior — async-shared drilling — using the lowest-friction mechanic possible: a leaderboard you see when you finish a run. Premise #2 of the office-hours diagnostic: "the differentiated wedge is friend leaderboards, not the drill itself."
 
-The retention engine is the leaderboard. The engagement loop is the drill.
+**The Practice/Competitive split protects the Zetamac feel.** A friend who clicks the link and gets shoved through a sign-up wall before they can even drill is a lost user. Practice mode means anyone — friend, stranger, Reddit drive-by — gets the full drill experience with zero friction. Competitive is the opt-in upgrade for users who want their scores to count against their friends'.
+
+The retention engine is the leaderboard. The engagement loop is the drill. The acquisition surface is Practice (no friction).
 
 ## Premises (from /office-hours, 2026-05-02)
 
@@ -22,6 +29,7 @@ The retention engine is the leaderboard. The engagement loop is the drill.
 6. **v1 ships ONE problem-range mode** — Zetamac's defaults only. Custom modes deferred to v2.
 7. **Voice input is deferred to v2 or later.**
 8. **The product can grow beyond the initial friend group**, but v1 is built for one friend group. Generalization is post-launch.
+9. **Practice and Competitive are separate first-class surfaces.** Practice is local-only and frictionless (no auth, no backend). Competitive requires sign-in and is where the friend leaderboard lives. The drill engine is shared; only the post-round wrapping differs. Surfaced on a `/` menu with two clear CTAs.
 
 ## Pre-build gates (do these BEFORE writing code)
 
@@ -39,26 +47,55 @@ Watch for 3+ days. If they happily adopt OpenQuant, **kill v1** — friends alre
 
 These two tests cost zero hours and give the strongest possible pre-build signal. Skipping them is the most expensive mistake possible at this stage.
 
-## Core loop
+## Core loops
 
+Two loops, one per mode. The drill 120s step is identical; only the wrap differs.
+
+**Practice loop** (no auth, no backend):
 ```
-   open  ──▶  drill 120s  ──▶  score recorded  ──▶  see your rank
-   page                            (validated)        on the leaderboard
-    │                                                       │
-    │                                                       │
-    ▲────────  drill again (same session, no gate)  ◀───────┘
+   /practice  ──▶  drill 120s  ──▶  score saved  ──▶  see your local PB
+                                    to localStorage      ("today's best 39")
+       │                                                        │
+       ▲────────  drill again (same session, no gate)  ◀────────┘
 ```
 
-That is the entire v1 loop. The friend invite is a one-time side flow (`/friends/invite`).
+**Competitive loop** (auth, backend):
+```
+   /competitive  ──▶  drill 120s  ──▶  score validated  ──▶  see your friend rank
+   ("Play ranked")                       and persisted          ("1 Mike 47, 2 You 39")
+        │                                                            │
+        ▲────────  drill again (same session, no gate)   ◀───────────┘
+```
+
+The friend invite is a one-time side flow inside `/competitive` (`/competitive#friends`).
 
 ## v1 scope
 
 ### Routes (Next.js 15 App Router)
-- `/` — landing. "Sign in to play" + one-paragraph explanation. Sign-in CTA.
-- `/play` — the drill. Zetamac defaults. 120s timer. Auto-submit on exact-match. Post-round summary shows today's best + lifetime best inline (no separate `/me` page in v1).
-- `/leaderboard` — daily tab only in v1 (weekly/all-time = v2). Shows top 50 of friends + viewer's rank. Daily window resets at **`America/New_York` midnight** (see "Daily rollover" below).
-- `/friends` — invite link generator, list of accepted friends. **No remove-friend UI in v1** (abuse handled via direct DB row deletion; per office-hours, friend-group context makes this fine). Unfriend, block, invite revocation deferred to v2.
-- **No `/me` page in v1.** Streaks, history page, per-problem analytics all cut. Recent run + lifetime best are surfaced inline on `/play` post-round.
+
+- `/` — **landing menu.** Two CTAs: "Practice" (left, default action) and "Competitive" (right, requires sign-in). Spare layout. No marketing copy beyond a tagline.
+- `/practice` — **local-only drill.** Zetamac defaults. 120s timer. Auto-submit on exact-match. No auth, no Supabase. Round results saved to `localStorage`. Post-round summary shows local "Today's best" and "Lifetime best" computed from `localStorage`. Works offline.
+- `/competitive` — **the social surface.** Requires sign-in (proxy redirects to `/auth/login` if unauthed). Shows the friend leaderboard at the top, "Play ranked round" CTA below. Friends list and invite-link generator inline. Daily leaderboard resets at America/New_York midnight.
+- `/competitive#friends` (or inline section on `/competitive`) — invite link generator + accepted-friends list. **No remove-friend UI in v1** (abuse handled via direct DB row deletion). Unfriend, block, invite revocation deferred to v2.
+- `/auth/*` — Supabase Auth template routes (sign-up, login, password reset). Used by Competitive mode. Practice mode never touches these.
+- **No `/me` page in v1.** Practice surfaces lifetime best inline. Competitive surfaces friend rank inline.
+
+### Mode comparison
+
+| Aspect | Practice | Competitive |
+|--------|----------|-------------|
+| Auth required | No | Yes |
+| Saves to | `localStorage` (browser-only) | Supabase Postgres (cross-device) |
+| Network calls during play | None | None (drill stays local) |
+| Network calls at round end | None | `POST /api/runs/finish` |
+| Anti-cheat | N/A (you can't cheat against yourself) | Server-issued seed, server-only answer key, sanity gates |
+| Leaderboard | Local PB only | Friend leaderboard (top 50 of friends + viewer's rank) |
+| Friends | N/A | Invite-link flow, accepted-friends list |
+| Post-round shows | Today's best, lifetime best (local) | Today's best, lifetime best, friend rank, sync status |
+| Works offline | Yes | No (needs network for run validation) |
+| What the user types in URL | `/practice` | `/competitive` |
+
+**The drill engine is the same module** (`lib/drill/*`) in both modes. Practice and Competitive are two thin wrappers around it that handle different post-round paths.
 
 ### Drill engine (~150-200 LOC TS)
 - **Problem generator**: Zetamac defaults — addition `2..100 + 2..100`, subtraction `0..100 - 0..100` (with `result ≥ 0`), multiplication `2..12 × 2..100`, division derived from multiplication (`a × b = c` → `c ÷ b = a`). Operations cycle weighted equally.
@@ -68,7 +105,10 @@ That is the entire v1 loop. The friend invite is a one-time side flow (`/friends
 - **Score** = number of correct answers in the 120s window.
 - **Imperative input**: the input field is a `useRef`'d native `<input>` whose value is read/written outside React's reconciler. Submission events bubble back into React on problem boundaries, never per-keystroke. **<16ms keystroke-to-render is non-negotiable**; React reconciliation per keystroke will blow the budget on cheap laptops.
 
-### Backend (Supabase)
+### Backend (Supabase) — Competitive mode only
+
+Practice mode never touches the backend. Everything below applies only to Competitive.
+
 - **Postgres + Auth + RLS** in one platform. Free tier handles ~50K users.
 - **Auth: Google OAuth single-click only.** No email/password, no magic link in v1. Login friction matters; Wordle famously had zero login. Apple Sign In is fast-follow if iOS friends complain.
 - **Schema** (4 tables: `users` from Supabase Auth, `runs`, `friendships`, `invite_tokens`; see "Data model" below).
@@ -77,10 +117,10 @@ That is the entire v1 loop. The friend invite is a one-time side flow (`/friends
 - **Score validation**: see "Run integrity" below for the two-endpoint flow (`runs/start` → `runs/finish`) with server-only answer key.
 
 ### Friend invite flow
-- `/friends` → "Generate invite link" → `app.example.com/invite/{8-char-base32-token}`.
+- `/competitive#friends` → "Generate invite link" → `app.example.com/invite/{8-char-base32-token}`.
 - **Single-use tokens, 7-day expiry** (per office-hours). Each friend the user wants to invite gets their own link. Reduces lateral spread risk; the inviter generates a fresh link per intended invitee.
 - Invitee clicks link → land on `/invite/{token}` → "Sign in with Google to accept" → after auth, server consumes the token (`used_by`, `used_at` set) and inserts a `friendships` row with `status=accepted` (auto-accept; this is a friend group, not a public network — no approval flow needed in v1).
-- Invitee redirects to `/leaderboard` with a one-time toast: "You and {inviter_name} are now friends. Drill to see your rank."
+- Invitee redirects to `/competitive` with a one-time toast: "You and {inviter_name} are now friends. Drill to see your rank."
 
 ### Mobile + PWA
 - Responsive layout. Math-friend phones during downtime is a v1 use case.
@@ -148,7 +188,7 @@ type InviteToken = {
 ```
 
 ### Indexes (day-1)
-- `runs(user_id, started_at DESC)` — for the user's lifetime-best lookup on /play summary.
+- `runs(user_id, started_at DESC)` — for the user's lifetime-best lookup on /practice summary.
 - `runs(started_at, score DESC) WHERE validation_status = 'ok'` — partial index supporting the daily leaderboard RPC. Without this, the friend-leaderboard query degrades quickly past ~10K runs/day.
 - `friendships(user_low, user_high)` — covered by primary key.
 - `invite_tokens(token)` — primary key.
@@ -269,7 +309,7 @@ POST /api/runs/finish ──────▶ verify session
 
 **Abandoned runs.** A run with `status='pending'` and `started_at < now() - 125s` is abandoned. A nightly cron flips them to `status='abandoned'`. Abandoned runs are excluded from the leaderboard.
 
-**Score floor.** Runs with `score < 5` are stored but excluded from the leaderboard. Office-hours rationale: a user who opens `/play` accidentally and lets the timer run out shouldn't pollute the friend leaderboard.
+**Score floor.** Runs with `score < 5` are stored but excluded from the leaderboard. Office-hours rationale: a user who opens `/practice` accidentally and lets the timer run out shouldn't pollute the friend leaderboard.
 
 **Tie-breaker.** When two friends reach the same `best_score` for the day, the earlier `started_at` wins the higher rank — first to reach the score wins. Implemented in the leaderboard RPC's `ORDER BY best_score DESC, best_started_at ASC`.
 
@@ -336,23 +376,26 @@ MOTION
 
 ### Information architecture per route
 
-**`/` — landing**
+**`/` — landing menu**
 ```
-┌──────────────────────────────────────────────────┐
-│  zetaprime · the friend leaderboard for arithmetic │
-│                                                  │
-│  Drill 120 seconds.                              │
-│  See your name above (or below) your friend's.   │
-│                                                  │
-│  [ Sign in with Google ]                         │
-│                                                  │
-│  ─────────────                                   │
-│  9 friends are drilling today.    (faint, small) │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│              zetamax                                │
+│        timed mental-math drill                        │
+│                                                       │
+│                                                       │
+│      ┌────────────────┐    ┌────────────────────┐   │
+│      │   Practice     │    │    Competitive     │   │
+│      │                │    │                    │   │
+│      │   no sign-in   │    │   sign in to play  │   │
+│      │   needed       │    │   with friends     │   │
+│      └────────────────┘    └────────────────────┘   │
+│                                                       │
+│         (faint footer text — credits / "v1")          │
+└──────────────────────────────────────────────────────┘
 ```
-First: product line + sign-in CTA. Second: the social hook in one sentence. Third: faint social proof (friend count if logged out). Empty state on a fresh deploy: omit the social-proof line.
+Two CTAs, equal visual weight. Practice is the casual default — anyone can use it without an account. Competitive is the social/ranked surface — requires sign-in and is where the friend leaderboard lives. Both buttons trigger keyboard-first actions: pressing `1` or `p` selects Practice, `2` or `c` selects Competitive (faint hint at the bottom for power users).
 
-**`/play` — the drill (the moat)**
+**`/practice` — local drill (the moat)**
 ```
 ┌──────────────────────────────────────────────────┐
 │ score 14                              0:47       │  ← top strip, monospace, muted
@@ -368,69 +411,72 @@ First: product line + sign-in CTA. Second: the social hook in one sentence. Thir
 │  tab to skip · r replays last round    (faint)   │  ← bottom hint strip
 └──────────────────────────────────────────────────┘
 ```
-Hierarchy: problem first (big), input second, timer + score peripheral. Hint strip is so faint a power user reads it once and never looks again. **NO** sidebar, **NO** profile chip, **NO** settings cog visible during play. Pause = `Esc`. The "almost empty" rule.
+Hierarchy: problem first (big), input second, timer + score peripheral. Hint strip is so faint a power user reads it once and never looks again. **NO** sidebar, **NO** profile chip, **NO** settings cog visible during play. Pause = `Esc`. The "almost empty" rule. **No network calls during play.**
 
-**`/play` post-round summary** (modal-ish, dismissable; not a separate route)
+**`/practice` post-round summary** (modal overlay)
 ```
 ┌──────────────────────────────────────────────────┐
 │              Round complete                       │
 │                                                  │
 │              39   correct of 42                   │
 │                                                  │
-│  Today's best     39   ↑ from 34                 │
-│  Lifetime best    52                              │
-│  Friend rank      3 of 5     [view leaderboard]  │
+│  Today's best       39   ↑ from 34               │
+│  Lifetime best      52                            │
+│  Accuracy           93%                           │
+│  Mean latency      1.3s                           │
 │                                                  │
 │              [ Drill again ]                      │
+│                                                  │
+│  faint: sign in to track against friends →       │
 └──────────────────────────────────────────────────┘
 ```
-Replaces the v1 `/me` page. Surfaces what matters (today's best, lifetime best, current friend rank) at the moment of completion. "Drill again" is the primary CTA.
+Today's best and lifetime best read from `localStorage`. The faint footer link nudges anonymous users toward Competitive without nagging. "Drill again" is the primary CTA (also Enter from the keyboard).
 
-**`/leaderboard` — the wedge**
-```
-┌──────────────────────────────────────────────────┐
-│  ◀ Today  ·  Weekly (soon)  ·  All-time (soon)   │
-│  resets in 4h 12m  (ET midnight)                 │
-│                                                  │
-│  1   ●  Mike Chen          47   played 2h ago    │
-│  2   ●  Sarah Park         42   played 30m ago   │
-│ ▶3   ●  You                39   played 1m ago    │  ← highlighted row
-│  4   ●  Alex Kim           35   played 5h ago    │
-│  5   ●  Priya R.           31   played 11h ago   │
-│                                                  │
-│  Drill again to climb        [ Drill ]            │  ← persistent CTA
-└──────────────────────────────────────────────────┘
-```
-Hierarchy: rank > score > name > timestamp. Rank as monospace, score as monospace tabular, names in regular weight. Current user's row is subtly highlighted (`--surface-2` background + 2px left border in accent). The "Drill" button is persistent. Top 50 of friends + viewer's rank in v1 (full pagination = v2). Daily window resets at America/New_York midnight; the countdown reflects ET, not local-user TZ.
+**`/competitive` — the wedge**
 
-**`/friends` — invite + list**
+Single page that shows the leaderboard at the top and hosts the ranked drill flow inline. Auth-gated.
+
 ```
-┌──────────────────────────────────────────────────┐
-│  Friends                                          │
-│                                                  │
-│  [ Copy invite link ]   single-use · 7-day expiry│
-│                                                  │
-│  ●  Mike Chen           friends since Mar 12     │
-│  ●  Sarah Park          friends since Apr 1      │
-│  ●  Alex Kim            friends since Apr 3      │
-│  ●  Priya R.            friends since Apr 18     │
-└──────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  Competitive                                            │
+│                                                         │
+│  Today  ·  Weekly (soon)  ·  All-time (soon)            │
+│  resets in 4h 12m  (ET midnight)                        │
+│                                                         │
+│  1   ●  Mike Chen          47   played 2h ago           │
+│  2   ●  Sarah Park         42   played 30m ago          │
+│ ▶3   ●  You                39   played 1m ago           │  ← highlighted row
+│  4   ●  Alex Kim           35   played 5h ago           │
+│  5   ●  Priya R.           31   played 11h ago          │
+│                                                         │
+│              [ Play ranked round ]                      │  ← primary CTA
+│                                                         │
+│  ─────────  Friends ──────────                          │
+│  [ Copy invite link ]   single-use · 7-day expiry       │
+│  ●  Mike Chen           friends since Mar 12            │
+│  ●  Sarah Park          friends since Apr 1             │
+└────────────────────────────────────────────────────────┘
 ```
-First: the invite-link generator. Second: friend list (read-only in v1). **No remove-friend hover affordance in v1** — abuse is handled by direct DB row deletion. Unfriend, block, invite revocation all deferred to v2.
+Hierarchy: rank > score > name > timestamp. Rank monospace, score monospace tabular, names regular weight. Current user's row subtly highlighted (`--surface-2` + 2px left border in accent). Top 50 of friends + viewer's rank in v1 (full pagination = v2). Daily window resets at America/New_York midnight.
+
+**Empty state for users with no friends:** swap the leaderboard rows for a centered "Invite a friend to see the rankings" card with the invite-link button prominently displayed. The "Play ranked round" CTA stays visible — you can still play ranked rounds against yourself; they show only your own rank when you have no friends.
+
+**Ranked round flow:** clicking "Play ranked round" calls `POST /api/runs/start`, gets a server-issued seed, transitions to the same drill screen as `/practice` but with a small "ranked" badge in the top strip. On round end, calls `POST /api/runs/finish`. Post-round summary shows the same fields as Practice plus "friend rank: 3 of 5 ↑ from 4 of 5" and a green "saved" badge.
 
 ### Interaction state coverage
 
 | Surface | Loading | Empty | Error | Success | Partial |
 |---------|---------|-------|-------|---------|---------|
-| `/` (logged out) | static — no loading | N/A | OAuth failure → "Couldn't sign in. Try again." inline | redirect to /play | N/A |
-| `/play` round-start | brief skeleton (<200ms) of the round shell | N/A | "Couldn't start round. Retry." | round renders, focus on input | N/A |
-| `/play` mid-round | N/A | N/A | client error → freeze + "Round broken, refresh to recover" toast | answer correct → input clears, problem advances; `--success` flash 100ms | N/A |
-| `/play` submit | "syncing..." indicator on round summary | N/A | network drop → indicator stays + retry; final fail → "Couldn't sync, try again later" | "Synced" check + leaderboard rank shown | offline → IDB buffer + retry |
-| `/leaderboard` | skeleton rows (5 placeholders) | "Invite a friend to see scores ranked here." with prominent invite-link button | "Couldn't load. Retry." | sorted list, current user highlighted | friends who haven't played today shown grayed at bottom: "Hasn't played today" |
-| `/friends` | brief skeleton | "Generate an invite link to start playing with friends." with prominent button | inline error per action | invite-link copied → toast "Copied. Send it." | invite link expired → "Generate a new link" CTA |
-| `/play` post-round summary | brief skeleton during validation | first-ever round → "First round complete. Drill again to set your lifetime best." | inline | shows score, today's best, lifetime best, friend rank | offline (sync pending) → "syncing... results will appear once online" |
+| `/` (landing menu) | static — no loading | N/A | N/A | menu renders, both CTAs focusable | N/A |
+| `/practice` round-start | brief skeleton (<200ms) of the round shell | N/A | "Couldn't load drill engine. Retry." | round renders, focus on input | N/A |
+| `/practice` mid-round | N/A | N/A | client error → freeze + "Round broken, refresh to recover" toast | answer correct → input clears, problem advances; `--success` flash 100ms | N/A |
+| `/practice` post-round | N/A | first-ever round → "First round complete. Drill again to set your lifetime best." | N/A | shows local today's best + lifetime best | N/A |
+| `/competitive` (loading) | skeleton rows (5 placeholders) | "Invite a friend to see the rankings" + prominent invite-link button | "Couldn't load leaderboard. Retry." | sorted list, current user highlighted | friends who haven't played today shown grayed at bottom: "Hasn't played today" |
+| `/competitive` ranked-round-start | brief skeleton during `POST /api/runs/start` | N/A | rate-limited (existing pending run) → resume; other → "Couldn't start ranked round" | drill begins with server seed | N/A |
+| `/competitive` ranked-round-end | "syncing..." badge | N/A | network drop → exp backoff retry; final fail → "Couldn't save — try again" | green "saved" badge + friend rank delta | offline → events buffered, retry on reconnect |
+| `/competitive#friends` | brief skeleton | "Generate an invite link to start playing with friends." with prominent button | inline error per action | invite-link copied → toast "Copied. Send it." | invite link expired → "Generate a new link" CTA |
 | Sign-in | "Redirecting to Google..." | N/A | OAuth callback failure → `/?error=oauth_callback` with friendly explanation | redirect to last attempted destination | N/A |
-| Invite landing `/invite/[token]` | brief skeleton | N/A | invalid/expired/maxed → "This link is no longer valid. Ask {inviter_name} for a new one." | already-friends → redirect to /leaderboard with toast; new friend → auto-friend + welcome toast | N/A |
+| Invite landing `/invite/[token]` | brief skeleton | N/A | invalid/expired/maxed → "This link is no longer valid. Ask {inviter_name} for a new one." | already-friends → redirect to /competitive with toast; new friend → auto-friend + welcome toast | N/A |
 
 **Empty states are designed.** "No items found." is banned. Every empty has warmth, a primary action, and context.
 
@@ -439,42 +485,47 @@ First: the invite-link generator. Second: friend list (read-only in v1). **No re
 ```
   STEP                          | USER FEELS                | UI SUPPORTS IT
   ──────────────────────────────|──────────────────────────|─────────────────────────────────
-  1. land on /                  | curious, mildly skeptical | clean line, fast paint, "see
-                                |                           |   your name above your friend's"
-  2. click "Sign in with Google"| friction risk             | one click, no email step
-  3. land on /play              | "let's go"                | screen is almost empty, focus
-                                |                           |   already on input
-  4. type 7×8 → answer flashes  | satisfaction              | green flash, instant advance
-  5. timer hits 0:00            | small dopamine            | score number animates +1 last
-                                |                           |   correct answer, then "synced"
-  6. click leaderboard          | curiosity                 | empty state with invite-link CTA
-  7. text invite link to Mike   | hopeful                   | "Send this to Mike" copy
-  8. Mike signs in, drills 28   | …                         | …
-  9. you refresh /leaderboard   | THE moment                | row "1 Mike Chen 28 ··· 2 You 24"
-                                | with friend's name above  | your row subtly highlighted
-                                | yours                     |
-  10. you click "Drill"         | competitive pull          | persistent CTA always visible
-  11. you score 31 → check rank | reversal                  | "1 You 31 ··· 2 Mike 28"
-  12. you screenshot it         | bragging right            | clean, screenshot-worthy layout
-                                |                           |   (no PII besides display names)
+  1. land on /                  | curious                   | two big buttons: Practice
+                                |                           |   (no friction) + Competitive
+  2. click "Practice"           | "let me try this"         | instant — no auth, no wait
+  3. drill, score 24            | satisfaction              | green flash on correct,
+                                |                           |   instant advance, no chrome
+  4. drill again, score 28      | momentum                  | localStorage tracks PB
+  5. notice "track against      | curiosity                 | faint footer link on post-round
+     friends →" footer          |                           |
+  6. click → sign up flow       | small friction OK now     | already invested, low resistance
+                                |                           |   (drill IS good)
+  7. land on /competitive       | "where are my friends"    | empty state: invite-link card
+                                |                           |   + "Play ranked round" CTA
+  8. text invite link to Mike   | hopeful                   | "Send this to Mike" copy
+  9. Mike clicks, signs up,     | …                         | …
+     drills 28
+  10. you click "Play ranked"   | competitive intent         | drill, validates, saves
+  11. you refresh /competitive  | THE moment                | row "1 Mike Chen 28 ··· 2 You 24"
+                                 | with friend's name above   | your row subtly highlighted
+                                 | yours                      |
+  12. you play another, score   | reversal                   | "1 You 31 ··· 2 Mike 28"
+      31
+  13. you screenshot it         | bragging right             | clean layout, no PII besides
+                                 |                            |   display names
 ```
 
-Steps 9 and 11 are the entire product. Everything else is in service of producing them.
+Steps 11 and 12 are the entire product. Everything else is in service of producing them. **The Practice path (steps 2-5) is the on-ramp** — without it, users bounce at the auth wall before they ever experience the drill.
 
 ### Mobile responsive specs
 
 | Breakpoint | Behavior |
 |------------|----------|
-| <640px (phone) | Problem display 64px (vs 96px desktop). Custom numeric keypad replaces system keyboard on `/play` (a `<div>` keypad below the input that types into the input via JS, since the iOS keyboard takes 50% of the screen). Top strip stays at 24px monospace. Leaderboard rows compact: avatar smaller (24px), timestamp drops to "2h" instead of "2h ago", "Drill" CTA becomes sticky-footer. /friends: invite-link button full-width. |
+| <640px (phone) | Problem display 64px (vs 96px desktop). Custom numeric keypad replaces system keyboard on `/practice` (a `<div>` keypad below the input that types into the input via JS, since the iOS keyboard takes 50% of the screen). Top strip stays at 24px monospace. Leaderboard rows compact: avatar smaller (24px), timestamp drops to "2h" instead of "2h ago", "Drill" CTA becomes sticky-footer. /competitive#friends: invite-link button full-width. |
 | 640-1024px (tablet) | Desktop layout; adjust max-width for readability. |
-| >1024px (desktop) | Centered max-width 720px on `/play`, 880px on `/leaderboard`, `/friends`. Generous whitespace. |
+| >1024px (desktop) | Centered max-width 720px on `/practice`, 880px on `/competitive`, `/competitive#friends`. Generous whitespace. |
 
 Touch targets: ≥44×44px on mobile (WCAG 2.5.5). The custom keypad uses 56×56px keys.
 
 ### Accessibility specs
 
 - **Keyboard nav:** every action reachable via Tab/Enter. Focus ring uses `--accent` 2px outline.
-- **Screen reader:** `/play` exposes the current problem via `aria-live="polite"` on a hidden `<div>`. Each correct/incorrect answer announces "Correct" / "Incorrect, the answer was X". Timer announces every 30 seconds.
+- **Screen reader:** `/practice` exposes the current problem via `aria-live="polite"` on a hidden `<div>`. Each correct/incorrect answer announces "Correct" / "Incorrect, the answer was X". Timer announces every 30 seconds.
 - **Contrast:** all text/background pairs ≥WCAG AA (verify `--text-muted` on `--bg` is at least 4.5:1; the muted gray above passes).
 - **Reduced motion:** respect `prefers-reduced-motion` — disable the green correct-answer flash, replace with an instant color swap.
 - **Color-blind safety:** correct/incorrect feedback never relies on green/red alone; pair with the "Correct" / "Incorrect" text in screen-reader announcements and a glyph (✓ / ✗) on the visual feedback.
@@ -489,7 +540,7 @@ The design must never ship with any of these:
 5. Bubbly border-radius (>12px on cards/inputs).
 6. Decorative blobs, floating circles, wavy SVG dividers.
 7. Emoji in headings or as bullet points.
-8. Colored left-border on cards (except the *current user* row on `/leaderboard`, which is the only intentional use).
+8. Colored left-border on cards (except the *current user* row on `/competitive`, which is the only intentional use).
 9. Generic hero copy ("Welcome to X", "Unlock the power of...").
 10. Cookie-cutter section rhythm (hero → 3 features → testimonials → pricing → CTA).
 
@@ -498,7 +549,7 @@ If a design proposal triggers any of these, the answer is "no, redo it."
 ## Performance budget (non-negotiable)
 
 - **Keystroke-to-render: <16ms.** Imperative DOM, not React reconciliation. Tested against synthetic 1000-keystroke input on a throttled CPU.
-- **Time-to-interactive (`/play` route): <1.5s on a cold load over 4G.** The play route is fully static; auth state hydrates lazily from a cookie after first paint.
+- **Time-to-interactive (`/practice` route): <1.5s on a cold load over 4G.** The play route is fully static; auth state hydrates lazily from a cookie after first paint.
 - **Problem-advance after correct submit: <8ms.**
 - **Bundle size for the play route: <150KB gzipped.** Auth UI in a separate chunk.
 - **No layout shift during play.** The problem panel is fixed-height.
@@ -538,7 +589,7 @@ The keyboard feel is the moat the user already knows how to build. The leaderboa
 | Design Review | `/plan-design-review` | UI/UX gaps | 1 | CLEAR | 4/10 → 9/10. ASCII wireframes per route, full state coverage, journey storyboard, design tokens, mobile + a11y specs, AI-slop guardrails locked |
 | Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
 
-**SPEC REVIEW HISTORY:** 2 iterations on the previous (CEO-era) DESIGN.md, 5.5 → 8.5/10. Current v1 doc rebuilt around office-hours intent, then reconciled against the office-hours doc directly (2026-05-02 follow-up). 11 items folded back in: server-issued seed + server-only answer key, single active-run constraint, ET midnight rollover, security-definer RLS function, /me page cut, top-50 leaderboard cap, score-floor filter, tie-breaker, Enter-as-manual-submit, single-use invite tokens, no remove-friend UI in v1.
+**SPEC REVIEW HISTORY:** 2 iterations on the previous (CEO-era) DESIGN.md, 5.5 → 8.5/10. Current v1 doc rebuilt around office-hours intent, then reconciled against the office-hours doc (2026-05-02 follow-up, 11 items folded). **Then revised again mid-build (2026-05-02 evening) to split the product into two distinct surfaces — Practice (local-only, no auth) and Competitive (auth + leaderboard).** The earlier "single /play route with auth-gated submission" model violated office-hours premise #1 (Zetamac feel = no friction); the new model puts the casual drill behind zero friction and reserves auth for the social layer.
 
 **UNRESOLVED:** 0 decisions outstanding. Naming, domain, and the two kill gates (text 3 friends + OpenQuant test) are pre-build blockers, tracked in `TODOS.md`. Visual mockups deferred (design binary needs `OPENAI_API_KEY` — run `/design-shotgun` post-name-decision).
 

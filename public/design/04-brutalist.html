@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 Brutalist — Zetamax mockup</title>
+<style>
+  /* No font imports — system defaults only. Brutalist commits to OS. */
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #ffffff; color: #000; font-family: "Times New Roman", Times, Georgia, serif; font-size: 18px; line-height: 1.5; }
+  a { color: #0000EE; }
+  a:visited { color: #551A8B; }
+  .topnav { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 2px solid #000; padding: 6px 16px; font-family: "Helvetica", Arial, sans-serif; font-size: 12px; display: flex; justify-content: space-between; }
+  section { min-height: 100vh; padding: 24px 16px; border-bottom: 4px double #000; }
+  .section-tag { font-family: "Helvetica", Arial, sans-serif; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: #555; margin-bottom: 16px; }
+  hr { border: none; border-top: 1px solid #000; margin: 16px 0; }
+  hr.thick { border-top: 4px solid #000; }
+  .blink { animation: blink 1.06s step-end infinite; }
+  @keyframes blink { 50% { background: transparent; color: transparent; } }
+
+  /* MENU */
+  .menu h1 { font-size: 56px; font-weight: 400; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .menu h1 em { font-style: italic; }
+  .menu .tag { font-family: "Helvetica", Arial, sans-serif; font-size: 14px; margin-bottom: 32px; }
+  .menu .meta { font-family: "Helvetica", Arial, sans-serif; font-size: 13px; color: #555; }
+  .menu p { margin-bottom: 16px; max-width: 80ch; }
+  .menu ul { padding-left: 28px; margin-bottom: 24px; }
+  .menu ul li { margin-bottom: 12px; }
+  .menu ul li a { font-size: 24px; }
+  .menu .highlight { background: #fff86d; padding: 1px 4px; }
+  .menu .footer-note { margin-top: 48px; font-family: "Helvetica", Arial, sans-serif; font-size: 12px; color: #666; }
+  .menu .footer-note .you-are-here { background: #fff86d; padding: 1px 4px; }
+  .menu pre.banner { font-family: "Menlo", Monaco, "Courier New", monospace; background: #000; color: #fff; padding: 12px; font-size: 12px; line-height: 1.4; margin-bottom: 24px; white-space: pre; overflow-x: auto; }
+
+  /* DRILL */
+  .drill h2 { font-size: 24px; font-weight: 400; }
+  .drill .meta-line { font-family: "Helvetica", Arial, sans-serif; font-size: 13px; margin-bottom: 24px; }
+  .drill .meta-line .live { background: #fff86d; padding: 1px 4px; font-weight: 700; }
+  .drill .problem-zone { padding: 64px 0; text-align: left; }
+  .drill .problem { font-size: clamp(64px, 12vw, 120px); font-family: "Times New Roman", Times, serif; font-weight: 400; line-height: 1.05; }
+  .drill .typed { font-size: clamp(64px, 12vw, 120px); font-family: "Times New Roman", Times, serif; font-weight: 400; line-height: 1.05; margin-top: 16px; }
+  .drill .typed .cursor { display: inline-block; width: 0.7ch; background: #000; color: #fff; }
+  .drill .commands { font-family: "Helvetica", Arial, sans-serif; font-size: 13px; }
+  .drill .commands b { font-family: "Menlo", Monaco, monospace; background: #eee; padding: 1px 6px; border: 1px solid #999; }
+  .drill table.scorecard { font-family: "Menlo", Monaco, monospace; font-size: 14px; border-collapse: collapse; margin-top: 24px; }
+  .drill table.scorecard td, .drill table.scorecard th { border: 1px solid #000; padding: 6px 12px; text-align: left; }
+  .drill table.scorecard th { background: #eee; }
+
+  /* POST */
+  .post h2 { font-size: 32px; font-weight: 400; margin-bottom: 8px; }
+  .post .subtitle { font-style: italic; font-family: "Helvetica", Arial, sans-serif; font-size: 14px; color: #555; margin-bottom: 24px; }
+  .post pre.dump { font-family: "Menlo", Monaco, "Courier New", monospace; background: #f5f5f5; border: 1px solid #000; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 24px; overflow-x: auto; }
+  .post .big-num { font-family: "Times New Roman", Times, serif; font-size: clamp(120px, 22vw, 280px); font-weight: 400; line-height: 0.9; margin-bottom: 8px; }
+  .post .big-num em { font-style: italic; }
+  .post p.actions { margin-top: 16px; }
+  .post p.actions a { font-size: 18px; margin-right: 16px; }
+  .post .you-beat { background: #fff86d; padding: 1px 4px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>04 · Brutalist / Are.na</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">// menu</div>
+  <pre class="banner">+--------------------------------------+
+| ZETAMAX -- TIMED MENTAL ARITHMETIC  |
+| version 1, last updated tonight       |
++--------------------------------------+</pre>
+  <h1><em>zetamax</em></h1>
+  <p class="tag">A drill. Two minutes. The friend leaderboard is optional.</p>
+  <hr>
+  <p class="meta">No tracking, no telemetry, no sign-in unless you want it. Practice mode runs entirely in your browser.</p>
+  <hr>
+  <p>Pick one:</p>
+  <ul>
+    <li><a href="#drill">Practice</a> &mdash; <span class="highlight">no sign-in needed</span>, scores saved locally</li>
+    <li><a href="#post">Competitive</a> &mdash; sign in to play with friends, daily leaderboard, ET midnight reset</li>
+  </ul>
+  <hr class="thick">
+  <p class="footer-note">last edited: this morning &nbsp;&middot;&nbsp; <span class="you-are-here">you are here</span> &nbsp;&middot;&nbsp; <a href="https://arithmetic.zetamac.com">inspired by zetamac</a></p>
+</section>
+
+<section class="drill" id="drill">
+  <div class="section-tag">// practice / drill in progress</div>
+  <h2>practice mode</h2>
+  <p class="meta-line">round started <a href="#">12:45:16</a> &mdash; remaining: <span class="live">01:47</span> &mdash; score: 14</p>
+  <hr>
+  <div class="problem-zone">
+    <div class="problem">47 + 38 =</div>
+    <div class="typed">85<span class="cursor blink">_</span></div>
+  </div>
+  <table class="scorecard">
+    <tr><th>key</th><th>does</th></tr>
+    <tr><td>tab</td><td>skip current problem (counts as wrong)</td></tr>
+    <tr><td>enter</td><td>submit (counts as wrong if mismatched)</td></tr>
+    <tr><td>backspace</td><td>delete last digit</td></tr>
+    <tr><td>esc</td><td>pause</td></tr>
+  </table>
+  <p class="commands" style="margin-top:24px">[<a href="#">help</a>] [<a href="#">settings</a>] [<a href="#post">end early</a>]</p>
+</section>
+
+<section class="post" id="post">
+  <div class="section-tag">// post-round</div>
+  <h2>round complete.</h2>
+  <p class="subtitle">round 0042 &mdash; ended 12:47:03</p>
+  <hr>
+  <div class="big-num">39</div>
+  <p>correct of <em>42</em> problems. Accuracy: <em>93%</em>.</p>
+  <p><span class="you-beat">today's best, up from 34</span> &nbsp;&middot;&nbsp; lifetime best: 52.</p>
+  <hr>
+  <pre class="dump">==== STATS DUMP ====
+score          : 39
+attempted      : 42
+correct        : 39
+accuracy       : 92.86%
+mean latency   : 1.34s
+fastest answer : 0.42s
+slowest answer : 4.81s
+streak max     : 7
+mode           : practice / classic 120s
+saved to       : localStorage["zetamax:practice-history"]
+====================</pre>
+  <p class="actions">[<a href="#drill">drill again</a>] &middot; [<a href="#">menu</a>] &middot; [<a href="#">copy stats</a>] &middot; <em>or press Enter</em></p>
+  <hr class="thick">
+  <p class="subtitle"><a href="#">track against friends &rarr;</a></p>
+</section>
+</body>
+</html>

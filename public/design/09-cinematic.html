@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>09 Cinematic — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #000;
+    --black-2: #0a0a0a;
+    --white: #ffffff;
+    --whisper: rgba(255,255,255,0.65);
+    --quiet: rgba(255,255,255,0.42);
+    --hairline: rgba(255,255,255,0.08);
+    --focus: #506074;
+  }
+  html, body { background: var(--black); color: var(--white); font-family: Inter, -apple-system, "SF Pro Text", system-ui, sans-serif; font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  body { font-feature-settings: "ss02" 1, "tnum" 1; letter-spacing: -0.005em; }
+  a { color: var(--white); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--hairline); display: flex; justify-content: space-between; padding: 14px 32px; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.14em; color: var(--quiet); text-transform: uppercase; }
+  .topnav a { text-decoration: none; }
+  section { min-height: 100vh; padding: 72px 8vw; display: flex; flex-direction: column; }
+  .section-tag { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.24em; color: var(--quiet); text-transform: uppercase; margin-bottom: 48px; }
+
+  /* MENU - very restrained */
+  .menu { justify-content: center; align-items: center; text-align: center; }
+  .menu .wordmark { font-weight: 200; font-size: clamp(40px, 6vw, 88px); letter-spacing: -0.04em; line-height: 1; margin-bottom: 12px; }
+  .menu .wordmark b { font-weight: 900; }
+  .menu .deck { color: var(--whisper); margin-bottom: 80px; font-weight: 300; max-width: 32ch; line-height: 1.5; }
+  .menu .picker { display: flex; gap: 64px; align-items: center; }
+  @media (max-width: 720px) { .menu .picker { flex-direction: column; gap: 32px; } }
+  .menu .option { padding: 8px 0; cursor: pointer; transition: opacity 0.2s; }
+  .menu .option:hover { opacity: 1; }
+  .menu .option .num { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--quiet); margin-bottom: 4px; letter-spacing: 0.1em; }
+  .menu .option .name { font-weight: 200; font-size: 32px; letter-spacing: -0.02em; line-height: 1; padding-bottom: 6px; border-bottom: 1px solid var(--hairline); margin-bottom: 8px; transition: border-color 0.2s; }
+  .menu .option:hover .name { border-bottom-color: var(--white); }
+  .menu .option .desc { font-size: 13px; color: var(--quiet); }
+  .menu .divider { width: 1px; height: 80px; background: var(--hairline); }
+  @media (max-width: 720px) { .menu .divider { width: 80px; height: 1px; } }
+  .menu .footer-mark { position: absolute; bottom: 24px; left: 0; right: 0; text-align: center; font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--quiet); letter-spacing: 0.18em; text-transform: uppercase; }
+
+  /* DRILL - almost-empty */
+  .drill .topstrip { display: flex; justify-content: space-between; padding: 0 0 32px; font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--quiet); font-weight: 300; letter-spacing: 0.04em; }
+  .drill .topstrip .live { color: var(--white); }
+  .drill .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 36px; }
+  .drill .problem { font-weight: 200; font-size: clamp(96px, 17vw, 240px); letter-spacing: -0.05em; line-height: 1; }
+  .drill .problem .op { color: var(--quiet); margin: 0 0.18em; font-weight: 200; }
+  .drill .typed { font-weight: 900; font-size: clamp(96px, 17vw, 240px); letter-spacing: -0.05em; line-height: 1; }
+  .drill .typed .cur { display: inline-block; width: 0.06em; height: 0.85em; background: var(--white); vertical-align: -0.05em; margin-left: 0.04em; animation: blink 1.4s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .drill .footstrip { padding-top: 32px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--quiet); letter-spacing: 0.16em; text-transform: uppercase; display: flex; gap: 40px; justify-content: center; }
+
+  /* POST = title-card cinematic moment */
+  .post { justify-content: center; align-items: center; text-align: center; }
+  .post .label { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.32em; color: var(--quiet); text-transform: uppercase; margin-bottom: 56px; animation: fade-in 1.2s ease-out 0.2s both; }
+  .post .big { font-weight: 900; font-size: clamp(180px, 32vw, 480px); line-height: 0.85; letter-spacing: -0.06em; margin-bottom: 56px; animation: fade-in 1.2s ease-out 0.4s both; }
+  .post .meta-line { font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--quiet); letter-spacing: 0.04em; margin-bottom: 8px; animation: fade-in 1.2s ease-out 0.7s both; }
+  .post .meta-line.up { color: var(--white); }
+  .post .stats-row { display: flex; gap: 48px; padding-top: 56px; animation: fade-in 1.2s ease-out 1s both; }
+  @media (max-width: 720px) { .post .stats-row { flex-direction: column; gap: 24px; } }
+  .post .stat { text-align: center; }
+  .post .stat .k { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.24em; color: var(--quiet); text-transform: uppercase; margin-bottom: 4px; }
+  .post .stat .v { font-family: "JetBrains Mono", monospace; font-weight: 300; font-size: 24px; }
+  .post .actions { padding-top: 64px; display: flex; gap: 24px; animation: fade-in 1.2s ease-out 1.3s both; }
+  .post .btn { padding: 14px 28px; background: transparent; color: var(--white); border: 1px solid var(--hairline); font-family: inherit; font-size: 14px; font-weight: 400; cursor: pointer; transition: border-color 0.15s; }
+  .post .btn:hover { border-color: var(--white); }
+  .post .btn.primary { background: var(--white); color: var(--black); border-color: var(--white); font-weight: 500; }
+  .post .btn.primary:hover { background: transparent; color: var(--white); }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(12px); letter-spacing: 0; }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .post .credits-mark { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--quiet); letter-spacing: 0.32em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>09 · CINEMATIC</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu" style="position:relative">
+  <div class="section-tag" style="position:absolute; top:72px; left:8vw">01 · menu</div>
+  <h1 class="wordmark">zeta<b>max</b></h1>
+  <p class="deck">A timed mental-arithmetic drill. Two minutes. Open the page.</p>
+  <div class="picker">
+    <div class="option">
+      <div class="num">01</div>
+      <div class="name">Practice</div>
+      <div class="desc">no sign-in</div>
+    </div>
+    <div class="divider"></div>
+    <div class="option">
+      <div class="num">02</div>
+      <div class="name">Competitive</div>
+      <div class="desc">with friends</div>
+    </div>
+  </div>
+  <div class="footer-mark">v1 · still cooking</div>
+</section>
+
+<section class="drill" style="position:relative">
+  <div class="section-tag" style="position:absolute; top:72px; left:8vw">02 · drill</div>
+  <div class="topstrip">
+    <span class="live">14</span>
+    <span class="live">01:47</span>
+  </div>
+  <div class="stage">
+    <div class="problem">47<span class="op">+</span>38</div>
+    <div class="typed">85<span class="cur"></span></div>
+  </div>
+  <div class="footstrip">
+    <span>tab — skip</span>
+    <span>enter — submit</span>
+    <span>backspace — delete</span>
+  </div>
+</section>
+
+<section class="post" style="position:relative">
+  <div class="section-tag" style="position:absolute; top:72px; left:8vw">03 · post-round</div>
+  <div class="label">round complete</div>
+  <div class="big">39</div>
+  <div class="meta-line up">a new personal best, up from 34.</div>
+  <div class="meta-line">correct of 42 · 93% accuracy · 1.34s mean latency</div>
+  <div class="stats-row">
+    <div class="stat"><div class="k">today</div><div class="v">39</div></div>
+    <div class="stat"><div class="k">lifetime</div><div class="v">52</div></div>
+    <div class="stat"><div class="k">streak</div><div class="v">×7</div></div>
+  </div>
+  <div class="actions">
+    <button class="btn primary">Drill again</button>
+    <button class="btn">Menu</button>
+  </div>
+  <div class="credits-mark">an arithmetic instrument</div>
+</section>
+</body>
+</html>

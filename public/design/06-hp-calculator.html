@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 HP Calculator CRT — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/gh/keshikan/DSEG@v0.46/css/dseg.min.css" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bezel: #d4cfa8;
+    --bezel-dark: #a89e6f;
+    --bezel-shadow: #635a36;
+    --screen-bg: #001a0a;
+    --screen-bg-2: #002912;
+    --phosphor: #00ff66;
+    --phosphor-dim: #008836;
+    --label: #1a1815;
+  }
+  html, body { background: #2a2a2a; color: var(--phosphor); font-family: "VT323", "IBM Plex Mono", monospace; font-size: 18px; line-height: 1.4; min-height: 100vh; }
+  a { color: var(--phosphor); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: #2a2a2a; border-bottom: 1px solid #555; display: flex; justify-content: space-between; padding: 10px 16px; font-family: Inter, system-ui, sans-serif; font-size: 11px; color: #d4cfa8; letter-spacing: 0.1em; text-transform: uppercase; }
+  .topnav a { color: #d4cfa8; text-decoration: none; }
+  section { min-height: 100vh; padding: 32px 24px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  .section-tag { font-family: Inter, system-ui, sans-serif; font-size: 11px; color: #d4cfa8; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 16px; align-self: flex-start; }
+
+  /* The "calculator" device wrapper */
+  .device { background: var(--bezel); border-radius: 16px; padding: 28px; box-shadow:
+    inset 0 2px 0 rgba(255,255,255,0.7),
+    inset 0 -3px 0 var(--bezel-shadow),
+    0 4px 12px rgba(0,0,0,0.4),
+    0 16px 32px rgba(0,0,0,0.35); width: 100%; max-width: 720px; }
+  .device .device-label { font-family: Inter, system-ui, sans-serif; font-size: 11px; color: var(--label); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .device .device-label .brand { font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+  .screen { background: var(--screen-bg); border-radius: 6px; padding: 24px; box-shadow:
+    inset 0 0 24px rgba(0, 30, 0, 0.7),
+    inset 0 0 80px rgba(0, 0, 0, 0.6); position: relative; overflow: hidden; }
+  .screen::before { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0px, transparent 1px, transparent 3px); pointer-events: none; }
+  .screen::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 30%; background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent); pointer-events: none; }
+  .screen .glow { color: var(--phosphor); text-shadow: 0 0 4px rgba(0, 255, 102, 0.7), 0 0 16px rgba(0, 255, 102, 0.4); }
+  .screen .glow-dim { color: var(--phosphor-dim); }
+  .screen .seg { font-family: "DSEG7-Classic", "VT323", monospace; }
+  .screen .row { display: flex; justify-content: space-between; padding: 4px 0; }
+
+  /* MENU on calculator */
+  .menu .screen { min-height: 240px; padding: 24px; }
+  .menu .screen .top-row { display: flex; justify-content: space-between; padding-bottom: 8px; margin-bottom: 16px; border-bottom: 1px dashed rgba(0, 255, 102, 0.3); font-size: 14px; }
+  .menu .screen .ascii-logo { font-size: 16px; line-height: 1; white-space: pre; margin: 16px 0; }
+  .menu .screen .menu-list { font-size: 22px; padding: 16px 0; }
+  .menu .screen .menu-list .item { padding: 4px 0; }
+  .menu .screen .menu-list .key { color: var(--phosphor-dim); margin-right: 12px; }
+  .menu .screen .menu-list .selected { background: var(--phosphor); color: var(--screen-bg); padding: 2px 8px; }
+  .menu .screen .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .menu .screen .footer { margin-top: 16px; padding-top: 8px; border-top: 1px dashed rgba(0, 255, 102, 0.3); font-size: 14px; display: flex; justify-content: space-between; }
+  .menu .keypad { margin-top: 24px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .menu .key { background: var(--bezel-dark); color: var(--label); padding: 12px; border-radius: 4px; box-shadow: inset 0 -2px 0 var(--bezel-shadow); font-size: 13px; text-align: center; font-family: "IBM Plex Mono", monospace; font-weight: 500; cursor: pointer; }
+  .menu .key.fn { background: var(--phosphor-dim); color: var(--screen-bg); }
+  .menu .key:hover { transform: translateY(1px); box-shadow: inset 0 -1px 0 var(--bezel-shadow); }
+
+  /* DRILL on calculator */
+  .drill .screen { min-height: 320px; }
+  .drill .top-row { display: flex; justify-content: space-between; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed rgba(0, 255, 102, 0.25); font-size: 14px; }
+  .drill .top-row .field { display: flex; gap: 6px; align-items: baseline; }
+  .drill .top-row .label { font-size: 12px; color: var(--phosphor-dim); }
+  .drill .seg-display { font-family: "DSEG7-Classic", "VT323", monospace; font-size: 28px; }
+  .drill .stage { padding: 32px 0; text-align: center; }
+  .drill .problem { font-size: clamp(48px, 9vw, 96px); line-height: 1; }
+  .drill .typed { font-size: clamp(48px, 9vw, 96px); line-height: 1; margin-top: 16px; }
+  .drill .typed .cursor { display: inline-block; width: 0.5em; height: 0.85em; background: var(--phosphor); vertical-align: -0.15em; box-shadow: 0 0 8px rgba(0, 255, 102, 0.7); animation: blink 1.06s step-end infinite; }
+  .drill .controls { display: flex; justify-content: space-around; padding-top: 16px; margin-top: 16px; border-top: 1px dashed rgba(0, 255, 102, 0.3); font-size: 14px; }
+  .drill .controls span { color: var(--phosphor-dim); }
+  .drill .controls span b { color: var(--phosphor); margin-right: 4px; }
+
+  /* POST on calculator */
+  .post .screen { min-height: 320px; }
+  .post .header-row { display: flex; justify-content: space-between; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed rgba(0, 255, 102, 0.3); font-size: 14px; }
+  .post .big { font-family: "DSEG7-Classic", "VT323", monospace; font-size: clamp(96px, 18vw, 200px); text-align: center; padding: 16px 0; line-height: 1; }
+  .post .label { text-align: center; font-size: 14px; color: var(--phosphor-dim); }
+  .post .stat-rows { padding: 16px 0; font-size: 16px; }
+  .post .stat-rows .row { display: flex; justify-content: space-between; padding: 4px 0; }
+  .post .stat-rows .row .v { font-family: "DSEG7-Classic", "VT323", monospace; }
+  .post .footer-row { display: flex; justify-content: space-between; padding-top: 8px; margin-top: 8px; border-top: 1px dashed rgba(0, 255, 102, 0.3); font-size: 14px; }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>06 · HP CALCULATOR / PHOSPHOR CRT</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">01 — menu</div>
+  <div class="device">
+    <div class="device-label"><span class="brand">ZP-12C</span><span>ZETAMAX ARITHMETIC TERMINAL</span></div>
+    <div class="screen">
+      <div class="top-row glow"><span>READY</span><span>BAT 100%</span></div>
+      <div class="ascii-logo glow">  ZETAMAX
+  =========
+  v1.0   ®</div>
+      <div class="menu-list">
+        <div class="item glow"><span class="key">[1]</span> <span class="selected">PRACTICE</span></div>
+        <div class="item glow"><span class="key">[2]</span> COMPETITIVE</div>
+        <div class="item glow-dim"><span class="key">[F1]</span> HELP</div>
+      </div>
+      <div class="footer glow-dim"><span>SELECT WITH 1 / 2</span><span class="blink">▮</span></div>
+    </div>
+    <div class="keypad">
+      <button class="key fn">F1</button>
+      <button class="key">7</button><button class="key">8</button><button class="key">9</button><button class="key">÷</button>
+      <button class="key fn">F2</button>
+      <button class="key">4</button><button class="key">5</button><button class="key">6</button><button class="key">×</button>
+      <button class="key fn">F3</button>
+      <button class="key">1</button><button class="key">2</button><button class="key">3</button><button class="key">−</button>
+      <button class="key fn">CLR</button>
+      <button class="key">0</button><button class="key">.</button><button class="key">=</button><button class="key">+</button>
+    </div>
+  </div>
+</section>
+
+<section class="drill">
+  <div class="section-tag">02 — drill / practice</div>
+  <div class="device">
+    <div class="device-label"><span class="brand">ZP-12C</span><span>PRACTICE · CLASSIC 120s</span></div>
+    <div class="screen">
+      <div class="top-row glow">
+        <div class="field"><span class="label">SCORE</span><span class="seg-display">14</span></div>
+        <div class="field"><span class="label">TIME</span><span class="seg-display">01:47</span></div>
+      </div>
+      <div class="stage">
+        <div class="problem glow">47 + 38 =</div>
+        <div class="typed glow">85<span class="cursor"></span></div>
+      </div>
+      <div class="controls">
+        <span><b>TAB</b> SKIP</span>
+        <span><b>ENT</b> SUBMIT</span>
+        <span><b>BS</b> DELETE</span>
+        <span><b>ESC</b> PAUSE</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="post">
+  <div class="section-tag">03 — post-round</div>
+  <div class="device">
+    <div class="device-label"><span class="brand">ZP-12C</span><span>RESULTS · ROUND 0042</span></div>
+    <div class="screen">
+      <div class="header-row glow"><span>RUN COMPLETE</span><span>12:47:03</span></div>
+      <div class="label">FINAL SCORE</div>
+      <div class="big glow">39</div>
+      <div class="label">CORRECT OF 42 · 93% ACC</div>
+      <div class="stat-rows glow">
+        <div class="row"><span>TODAY HIGH</span><span class="v">39 ↑ 34</span></div>
+        <div class="row"><span>LIFETIME</span><span class="v">52</span></div>
+        <div class="row"><span>MEAN MS</span><span class="v">1340</span></div>
+        <div class="row"><span>STREAK MAX</span><span class="v">07</span></div>
+      </div>
+      <div class="footer-row glow-dim"><span>[ENTER] DRILL AGAIN</span><span>[ESC] MENU</span></div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

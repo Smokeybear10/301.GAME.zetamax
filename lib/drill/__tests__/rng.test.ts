@@ -33,12 +33,12 @@ describe("mulberry32", () => {
 describe("hashString", () => {
   it("is deterministic", () => {
     expect(hashString("hello")).toBe(hashString("hello"));
-    expect(hashString("zetaprime")).toBe(hashString("zetaprime"));
+    expect(hashString("zetamax")).toBe(hashString("zetamax"));
   });
 
   it("produces different hashes for different inputs", () => {
     expect(hashString("a")).not.toBe(hashString("b"));
-    expect(hashString("zetaprime")).not.toBe(hashString("zetaprime!"));
+    expect(hashString("zetamax")).not.toBe(hashString("zetamax!"));
   });
 
   it("returns a uint32", () => {

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>03 Teenage Engineering — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f0eada;
+    --paper: #faf5e6;
+    --char: #2a2926;
+    --orange: #ff6600;
+    --blue: #1e3a8a;
+    --rule: #c8c1ad;
+    --muted: #6b665b;
+  }
+  html, body { background: var(--cream); color: var(--char); font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: var(--char); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: var(--cream); border-bottom: 2px solid var(--char); display: flex; justify-content: space-between; padding: 10px 24px; font-family: "Space Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .topnav a { text-decoration: none; }
+  section { min-height: 100vh; padding: 32px 24px; border-bottom: 2px solid var(--char); display: flex; flex-direction: column; }
+  .section-tag { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--orange); text-transform: uppercase; margin-bottom: 24px; }
+
+  /* Industrial panel — every region is a labeled module */
+  .module { background: var(--paper); border: 2px solid var(--char); border-radius: 6px; position: relative; padding: 24px; }
+  .module-label { position: absolute; top: -10px; left: 16px; background: var(--cream); padding: 0 8px; font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--char); }
+  .module-label.orange { color: var(--orange); }
+
+  /* MENU */
+  .menu .top { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .menu .brand-mod { display: flex; flex-direction: column; gap: 12px; }
+  .menu .wordmark { font-weight: 800; font-size: clamp(48px, 8vw, 96px); letter-spacing: -0.04em; line-height: 0.9; }
+  .menu .wordmark .dot { display: inline-block; width: 0.08em; height: 0.08em; background: var(--orange); border-radius: 50%; vertical-align: 0.4em; margin: 0 0.05em; }
+  .menu .tag { font-family: "Space Mono", monospace; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+  .menu .led-mod { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 32px; }
+  .menu .led { width: 14px; height: 14px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 8px rgba(255, 102, 0, 0.45), inset 0 0 4px rgba(0,0,0,0.2); }
+  .menu .led-label { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .menu .picker { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+  @media (max-width: 720px) { .menu .picker { grid-template-columns: 1fr; } }
+  .menu .button-mod { padding: 36px 28px; cursor: pointer; transition: transform 0.1s; display: flex; flex-direction: column; gap: 12px; }
+  .menu .button-mod:hover { transform: translateY(-2px); }
+  .menu .knob { width: 56px; height: 56px; border: 3px solid var(--char); border-radius: 50%; background: var(--cream); position: relative; margin-bottom: 8px; }
+  .menu .knob::after { content: ""; position: absolute; top: 4px; left: 50%; width: 4px; height: 14px; background: var(--orange); transform: translateX(-50%); border-radius: 2px; }
+  .menu .button-mod.competitive .knob::after { transform: translateX(-50%) rotate(60deg); transform-origin: 2px 24px; }
+  .menu .b-name { font-weight: 700; font-size: 28px; letter-spacing: -0.02em; }
+  .menu .b-desc { font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.6; }
+
+  /* DRILL — looks like an OP-1 face */
+  .drill .panel { flex: 1; display: grid; grid-template-rows: auto 1fr auto; gap: 16px; }
+  .drill .meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .drill .meter { padding: 16px; }
+  .drill .meter .k { font-family: "Space Mono", monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
+  .drill .meter .v { font-family: "Space Mono", monospace; font-size: 28px; font-weight: 700; }
+  .drill .meter .v.orange { color: var(--orange); }
+  .drill .meter .v.blue { color: var(--blue); }
+  .drill .display { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px; gap: 32px; }
+  .drill .problem { font-family: "Space Mono", monospace; font-size: clamp(56px, 12vw, 144px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+  .drill .problem .op { color: var(--orange); margin: 0 0.3em; }
+  .drill .typed { font-family: "Space Mono", monospace; font-size: clamp(56px, 12vw, 144px); font-weight: 700; line-height: 1; color: var(--blue); position: relative; }
+  .drill .typed .cursor { display: inline-block; width: 0.5em; height: 1em; background: var(--orange); vertical-align: -0.15em; margin-left: 0.05em; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .drill .keys { display: flex; gap: 12px; padding: 0; }
+  .drill .key { flex: 1; padding: 16px; text-align: center; cursor: pointer; transition: background 0.1s; }
+  .drill .key:hover { background: var(--cream); }
+  .drill .key .label { font-family: "Space Mono", monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 4px; }
+  .drill .key .name { font-weight: 700; font-size: 14px; }
+
+  /* POST */
+  .post .row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; flex: 1; }
+  @media (max-width: 720px) { .post .row { grid-template-columns: 1fr; } }
+  .post .receipt { padding: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--paper); position: relative; overflow: hidden; }
+  .post .receipt::before, .post .receipt::after { content: ""; position: absolute; left: 0; right: 0; height: 12px; background-image: radial-gradient(circle at 6px 6px, var(--cream) 4px, transparent 4px); background-size: 12px 12px; }
+  .post .receipt::before { top: 0; }
+  .post .receipt::after { bottom: 0; }
+  .post .receipt .stamp { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; padding: 4px 8px; border: 1px dashed var(--orange); }
+  .post .receipt .big { font-family: "Space Mono", monospace; font-size: clamp(96px, 18vw, 200px); font-weight: 700; line-height: 0.85; letter-spacing: -0.04em; }
+  .post .receipt .meta { font-family: "Space Mono", monospace; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .post .receipt hr { width: 80%; border: none; border-top: 1px dashed var(--rule); margin: 16px 0; }
+  .post .receipt .stats { font-family: "Space Mono", monospace; font-size: 13px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 80%; }
+  .post .receipt .stats .row-i { display: flex; justify-content: space-between; }
+  .post .right-stack { display: flex; flex-direction: column; gap: 16px; }
+  .post .pb-mod { padding: 24px; flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+  .post .pb-mod .row-i { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+  .post .pb-mod .row-i:last-child { border-bottom: none; }
+  .post .pb-mod .k { color: var(--muted); font-family: "Space Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .post .pb-mod .v { font-weight: 700; font-family: "Space Mono", monospace; }
+  .post .pb-mod .v.up { color: var(--orange); }
+  .post .actions { display: flex; gap: 8px; padding: 16px; }
+  .post .btn { flex: 1; padding: 14px; background: var(--orange); color: var(--paper); font-family: "Space Mono", monospace; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; border: 2px solid var(--char); cursor: pointer; border-radius: 4px; }
+  .post .btn:hover { background: var(--char); }
+  .post .btn.ghost { background: var(--paper); color: var(--char); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>03 · Teenage Engineering</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">01 — MENU</div>
+  <div class="top">
+    <div class="module brand-mod">
+      <div class="module-label">unit · 01</div>
+      <div class="wordmark">zeta<span class="dot"></span>max</div>
+      <div class="tag">timed mental arithmetic / hardware feel</div>
+    </div>
+    <div class="module led-mod">
+      <div class="module-label orange">power</div>
+      <div class="led"></div>
+      <div class="led-label">on / ready</div>
+    </div>
+  </div>
+  <div class="picker">
+    <div class="module button-mod practice">
+      <div class="module-label">a</div>
+      <div class="knob"></div>
+      <div class="b-name">Practice</div>
+      <div class="b-desc">Local drill. No sign-in.<br>Saved in your browser.</div>
+    </div>
+    <div class="module button-mod competitive">
+      <div class="module-label orange">b</div>
+      <div class="knob"></div>
+      <div class="b-name">Competitive</div>
+      <div class="b-desc">Sign in / friend leaderboard.<br>Daily reset, ET midnight.</div>
+    </div>
+  </div>
+</section>
+
+<section class="drill">
+  <div class="section-tag">02 — DRILL · PRACTICE</div>
+  <div class="panel">
+    <div class="meters">
+      <div class="module meter"><div class="module-label">score</div><div class="k">live</div><div class="v orange">14</div></div>
+      <div class="module meter"><div class="module-label">time</div><div class="k">left</div><div class="v">01:47</div></div>
+      <div class="module meter"><div class="module-label">streak</div><div class="k">in a row</div><div class="v blue">×3</div></div>
+      <div class="module meter"><div class="module-label">mode</div><div class="k">unit</div><div class="v" style="font-size:18px">classic</div></div>
+    </div>
+    <div class="module display">
+      <div class="module-label orange">screen</div>
+      <div class="problem">47<span class="op">+</span>38</div>
+      <div class="typed">85<span class="cursor"></span></div>
+    </div>
+    <div class="module keys">
+      <div class="module-label">controls</div>
+      <div class="key"><div class="label">tab</div><div class="name">skip</div></div>
+      <div class="key"><div class="label">enter</div><div class="name">submit</div></div>
+      <div class="key"><div class="label">backspace</div><div class="name">delete</div></div>
+      <div class="key"><div class="label">esc</div><div class="name">pause</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="post">
+  <div class="section-tag">03 — POST-ROUND</div>
+  <div class="row">
+    <div class="module receipt">
+      <div class="module-label">round 0042</div>
+      <div class="stamp">complete · 12:47</div>
+      <div class="big">39</div>
+      <div class="meta">of 42 problems</div>
+      <hr>
+      <div class="stats">
+        <div class="row-i"><span>accuracy</span><span>93%</span></div>
+        <div class="row-i"><span>mean latency</span><span>1.34s</span></div>
+        <div class="row-i"><span>fastest answer</span><span>0.42s</span></div>
+        <div class="row-i"><span>slowest answer</span><span>4.81s</span></div>
+      </div>
+    </div>
+    <div class="right-stack">
+      <div class="module pb-mod">
+        <div class="module-label orange">personal bests</div>
+        <div class="row-i"><span class="k">today</span><span class="v up">39 ↑</span></div>
+        <div class="row-i"><span class="k">lifetime</span><span class="v">52</span></div>
+        <div class="row-i"><span class="k">total runs</span><span class="v">87</span></div>
+        <div class="row-i"><span class="k">friend rank</span><span class="v" style="opacity:0.5">— sign in</span></div>
+      </div>
+      <div class="module actions">
+        <button class="btn">drill again</button>
+        <button class="btn ghost">menu</button>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

@@ -226,7 +226,7 @@ ook what gstack stuff shohuld i use now
 (Claude says: nothing right now. Go pick a name + run kill gates. Optionally `/cso` and `/design-shotgun` while you wait.)
 
 ```
-Name tentatively is zetaprime i already hav my firends come in
+Name tentatively is zetamax i already hav my firends come in
 ```
 
 (Friends already in = demand validation effectively passed. Claude checks domain availability via whois/dig.)
@@ -269,7 +269,7 @@ do C
 
 | Question | Answer |
 |----------|--------|
-| Cleanup | Option C: rename folder Zetamac → Zetaprime, move scaffold contents up, single git repo at root |
+| Cleanup | Option C: rename folder Zetamac → Zetamax, move scaffold contents up, single git repo at root |
 
 (Claude executes the 7-step cleanup. Sets dev script to `next dev -p 2301`. Single initial commit with both planning docs and code.)
 

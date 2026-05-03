@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>02 Swiss International — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --paper: #f7f6f2;
+    --ink: #0a0a0a;
+    --rule: #d0cdc6;
+    --rule-soft: #e8e6e0;
+    --red: #cc0000;
+    --muted: #767270;
+  }
+  html, body { background: var(--paper); color: var(--ink); font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+  a { color: var(--ink); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: var(--paper); border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; padding: 12px 32px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 500; }
+  .topnav a { text-decoration: none; }
+  section { min-height: 100vh; padding: 56px 8vw; border-bottom: 1px solid var(--ink); display: flex; flex-direction: column; }
+  .section-tag { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 32px; }
+
+  /* MENU — Swiss poster grid */
+  .menu .grid12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; flex: 1; }
+  .menu h1 { grid-column: 1 / span 8; font-weight: 800; font-size: clamp(72px, 12vw, 200px); letter-spacing: -0.05em; line-height: 0.85; margin-top: 48px; }
+  .menu .red { color: var(--red); }
+  .menu .lede { grid-column: 9 / span 4; align-self: end; font-size: 14px; line-height: 1.5; max-width: 24ch; }
+  .menu .rule { grid-column: 1 / -1; height: 1px; background: var(--ink); margin-top: 64px; }
+  .menu .ctas { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; margin-top: 32px; }
+  .menu .cta { grid-column: span 6; padding: 32px 0; cursor: pointer; }
+  .menu .cta:hover { color: var(--red); }
+  .menu .cta .num { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.1em; margin-bottom: 8px; color: var(--muted); }
+  .menu .cta .name { font-weight: 700; font-size: clamp(28px, 4vw, 56px); letter-spacing: -0.03em; line-height: 1; margin-bottom: 16px; }
+  .menu .cta .desc { font-size: 13px; max-width: 36ch; line-height: 1.5; }
+  .menu .colophon { grid-column: 1 / -1; margin-top: auto; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; padding-top: 24px; border-top: 1px solid var(--rule-soft); }
+
+  /* DRILL — minimalist with running header */
+  .drill .head { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; margin-bottom: 72px; }
+  .drill .head .title { grid-column: 1 / span 6; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .drill .head .meta { grid-column: 7 / -1; text-align: right; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+  .drill .stage { flex: 1; display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; align-items: center; }
+  .drill .problem { grid-column: 2 / span 7; font-weight: 800; font-size: clamp(72px, 14vw, 200px); letter-spacing: -0.05em; line-height: 0.9; }
+  .drill .problem .op { color: var(--red); margin: 0 0.2em; }
+  .drill .input { grid-column: 2 / span 7; font-weight: 800; font-size: clamp(72px, 14vw, 200px); letter-spacing: -0.05em; line-height: 0.9; color: var(--red); margin-top: 24px; }
+  .drill .input .cur { display: inline-block; width: 0.08em; background: var(--red); height: 0.85em; vertical-align: -0.05em; animation: caret 1s steps(2) infinite; margin-left: 0.1em; }
+  @keyframes caret { 50% { opacity: 0; } }
+  .drill .stats { grid-column: 9 / span 4; display: flex; flex-direction: column; gap: 24px; }
+  .drill .stats .stat .label { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .drill .stats .stat .v { font-family: "JetBrains Mono", monospace; font-size: 32px; font-weight: 500; line-height: 1; }
+  .drill .stats .stat .v.red { color: var(--red); }
+  .drill .foot { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--rule); display: flex; gap: 32px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* POST — Swiss poster, big number left, stats grid right */
+  .post .layout { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; flex: 1; align-items: stretch; }
+  .post .left { grid-column: 1 / span 7; display: flex; flex-direction: column; justify-content: space-between; }
+  .post .left .label { font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 24px; }
+  .post .left .big { font-weight: 800; font-size: clamp(160px, 26vw, 380px); letter-spacing: -0.06em; line-height: 0.8; color: var(--red); }
+  .post .left .meta { font-size: 16px; max-width: 36ch; line-height: 1.5; }
+  .post .right { grid-column: 9 / span 4; align-self: end; }
+  .post .right table { width: 100%; border-collapse: collapse; }
+  .post .right th, .post .right td { text-align: left; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+  .post .right th { font-weight: 500; color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .post .right td.v { font-family: "JetBrains Mono", monospace; text-align: right; font-weight: 500; }
+  .post .right td.v.red { color: var(--red); }
+  .post .right .actions { margin-top: 32px; display: flex; gap: 12px; }
+  .post .right .btn { padding: 14px 24px; background: var(--ink); color: var(--paper); border: none; font-family: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .post .right .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>02 · Swiss International</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">01 / MENU</div>
+  <div class="grid12">
+    <h1>zeta<span class="red">max</span></h1>
+    <p class="lede">A timed mental-arithmetic drill. Two minutes. Type the answer. The friend leaderboard is optional.</p>
+    <div class="rule"></div>
+    <div class="ctas">
+      <div class="cta">
+        <div class="num">01 / Practice</div>
+        <div class="name">Practice</div>
+        <div class="desc">No sign-in. Local scores. The drill, on demand.</div>
+      </div>
+      <div class="cta">
+        <div class="num">02 / Competitive</div>
+        <div class="name">Competitive</div>
+        <div class="desc">Sign in. See your name on the friend leaderboard. Daily, by ET.</div>
+      </div>
+    </div>
+    <div class="colophon"><span>zetamax / v1</span><span>typeset in inter &amp; jetbrains mono</span><span>practice + competitive</span></div>
+  </div>
+</section>
+
+<section class="drill">
+  <div class="section-tag">02 / DRILL · PRACTICE</div>
+  <div class="head">
+    <div class="title">Practice — 120 seconds</div>
+    <div class="meta">14 ⁄ 01:47</div>
+  </div>
+  <div class="stage">
+    <div>
+      <div class="problem">47<span class="op">+</span>38</div>
+      <div class="input">85<span class="cur"></span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">Score</div><div class="v">14</div></div>
+      <div class="stat"><div class="label">Time</div><div class="v red">01:47</div></div>
+      <div class="stat"><div class="label">Streak</div><div class="v">×3</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>Tab — skip</span><span>Enter — submit</span><span>Backspace — delete</span><span>Esc — pause</span></div>
+</section>
+
+<section class="post">
+  <div class="section-tag">03 / POST-ROUND</div>
+  <div class="layout">
+    <div class="left">
+      <div>
+        <div class="label">Round complete</div>
+        <div class="big">39</div>
+        <div class="meta">Correct of 42. A new personal best for today, up from 34.</div>
+      </div>
+    </div>
+    <div class="right">
+      <table>
+        <tr><th>Today</th><td class="v red">39</td></tr>
+        <tr><th>Lifetime</th><td class="v">52</td></tr>
+        <tr><th>Accuracy</th><td class="v">93%</td></tr>
+        <tr><th>Mean latency</th><td class="v">1.34 s</td></tr>
+        <tr><th>Friend rank</th><td class="v">— sign in</td></tr>
+      </table>
+      <div class="actions">
+        <button class="btn">Drill again</button>
+        <button class="btn ghost">Menu</button>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

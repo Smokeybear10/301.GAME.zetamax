@@ -47,14 +47,20 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  // Public routes that don't require auth. /play is on this list during v0
-  // dev iteration; once we wire run submission to /api/runs/start, we move
-  // /play under (authed) so anonymous users can't post runs.
+  // Public routes that don't require auth.
+  // - `/` is the landing menu
+  // - `/practice` is the local-only drill — no auth needed
+  // - `/login`, `/auth/*` are the auth flow itself
+  // - `/api/*` route handlers do their own auth check and return JSON 401s.
+  //   Redirecting them to /auth/login would break client fetches.
+  // /competitive is INTENTIONALLY NOT in this list — it requires sign-in.
   const isPublicRoute =
     request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/practice") ||
+    request.nextUrl.pathname.startsWith("/design") ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
-    request.nextUrl.pathname.startsWith("/play");
+    request.nextUrl.pathname.startsWith("/api");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
