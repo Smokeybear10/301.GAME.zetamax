@@ -36,10 +36,10 @@ const MODES: Mode[] = [
   },
   {
     num: "04",
-    slug: "leaderboard",
-    title: "Leaderboard",
-    subtitle: "soon — your stats vs friends, every metric",
-    href: null,
+    slug: "leagues",
+    title: "Leagues",
+    subtitle: "your friend groups + leaderboards",
+    href: "/competitive/leagues",
   },
 ];
 
