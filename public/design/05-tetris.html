@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 Tetris Effect — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07071a;
+    --bg-2: #0c0c2a;
+    --grid: rgba(0, 229, 255, 0.06);
+    --text: #e8eaff;
+    --muted: #6b6f9b;
+    --cyan: #00e5ff;
+    --magenta: #ff2dad;
+    --yellow: #ffe600;
+    --red: #ff4f4f;
+    --green: #00ff88;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 32px 32px; }
+  a { color: var(--cyan); text-decoration: none; }
+  .topnav { position: sticky; top: 0; z-index: 10; background: rgba(7, 7, 26, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid rgba(0, 229, 255, 0.18); display: flex; justify-content: space-between; padding: 12px 24px; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--cyan); text-transform: uppercase; }
+  section { min-height: 100vh; padding: 32px 24px; display: flex; flex-direction: column; }
+  .section-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--magenta); text-transform: uppercase; margin-bottom: 24px; }
+  .glow-cyan { text-shadow: 0 0 12px rgba(0, 229, 255, 0.45), 0 0 32px rgba(0, 229, 255, 0.18); }
+  .glow-magenta { text-shadow: 0 0 12px rgba(255, 45, 173, 0.45), 0 0 32px rgba(255, 45, 173, 0.18); }
+
+  /* MENU */
+  .menu .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 64px; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
+  .menu .wordmark { font-family: "JetBrains Mono", monospace; font-weight: 800; font-size: clamp(64px, 12vw, 160px); letter-spacing: -0.04em; line-height: 0.9; margin-bottom: 8px; color: var(--text); }
+  .menu .wordmark .accent { color: var(--cyan); text-shadow: 0 0 24px rgba(0, 229, 255, 0.55); }
+  .menu .tag { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 64px; }
+  .menu .picker { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+  @media (max-width: 720px) { .menu .picker { grid-template-columns: 1fr; } }
+  .menu .card { padding: 36px; cursor: pointer; border: 1px solid rgba(0, 229, 255, 0.22); background: var(--bg-2); position: relative; transition: transform 0.15s, border-color 0.15s; }
+  .menu .card:hover { transform: translateY(-2px); border-color: var(--cyan); box-shadow: 0 0 32px rgba(0, 229, 255, 0.25); }
+  .menu .card.competitive:hover { border-color: var(--magenta); box-shadow: 0 0 32px rgba(255, 45, 173, 0.25); }
+  .menu .card .num { position: absolute; top: 16px; right: 20px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
+  .menu .card .name { font-weight: 700; font-family: "JetBrains Mono", monospace; font-size: 36px; letter-spacing: -0.02em; margin-bottom: 12px; }
+  .menu .card.practice .name { color: var(--cyan); }
+  .menu .card.competitive .name { color: var(--magenta); }
+  .menu .card .desc { color: var(--muted); font-size: 13px; line-height: 1.6; }
+  .menu .footer-row { margin-top: auto; display: flex; justify-content: space-between; padding-top: 24px; font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.1em; color: var(--muted); }
+
+  /* DRILL */
+  .drill .top-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 56px; }
+  .drill .stat { padding: 16px 20px; border: 1px solid rgba(0, 229, 255, 0.2); background: var(--bg-2); }
+  .drill .stat.streak { border-color: rgba(255, 45, 173, 0.3); }
+  .drill .stat .k { font-family: "JetBrains Mono", monospace; font-size: 10px; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+  .drill .stat .v { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 28px; color: var(--text); }
+  .drill .stat.score .v { color: var(--cyan); }
+  .drill .stat.streak .v { color: var(--magenta); }
+  .drill .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; }
+  .drill .problem { font-family: "JetBrains Mono", monospace; font-weight: 800; font-size: clamp(64px, 13vw, 168px); letter-spacing: -0.04em; line-height: 1; color: var(--text); }
+  .drill .problem .op { color: var(--magenta); margin: 0 0.18em; }
+  .drill .typed { font-family: "JetBrains Mono", monospace; font-weight: 800; font-size: clamp(64px, 13vw, 168px); letter-spacing: -0.04em; line-height: 1; color: var(--cyan); }
+  .drill .typed .cursor { display: inline-block; width: 0.45em; height: 0.85em; background: var(--magenta); vertical-align: middle; margin-left: 0.06em; animation: pulse 0.85s ease-in-out infinite; box-shadow: 0 0 16px rgba(255, 45, 173, 0.65); }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scaleY(1); } 50% { opacity: 0.5; transform: scaleY(0.92); } }
+  .drill .multiplier { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 24px; color: var(--magenta); padding: 8px 20px; border: 1px solid var(--magenta); display: inline-block; letter-spacing: 0.05em; }
+  .drill .keys-row { display: flex; gap: 24px; justify-content: center; padding-top: 32px; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.16em; }
+  .drill .keys-row b { color: var(--cyan); margin-right: 8px; font-weight: 500; }
+
+  /* POST */
+  .post .stage { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+  .post .label { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--magenta); text-transform: uppercase; margin-bottom: 8px; }
+  .post .big { font-family: "JetBrains Mono", monospace; font-weight: 800; font-size: clamp(120px, 22vw, 280px); line-height: 0.85; letter-spacing: -0.05em; color: var(--cyan); text-shadow: 0 0 32px rgba(0, 229, 255, 0.55), 0 0 64px rgba(0, 229, 255, 0.25); }
+  .post .meta { font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+  .post .grid-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 16px; }
+  @media (max-width: 720px) { .post .grid-stats { grid-template-columns: 1fr 1fr; } }
+  .post .grid-stats .cell { padding: 16px; border: 1px solid rgba(0, 229, 255, 0.2); background: var(--bg-2); }
+  .post .grid-stats .cell.up { border-color: var(--magenta); }
+  .post .grid-stats .k { font-family: "JetBrains Mono", monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 6px; }
+  .post .grid-stats .v { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 22px; }
+  .post .grid-stats .up .v { color: var(--magenta); text-shadow: 0 0 16px rgba(255, 45, 173, 0.45); }
+  .post .actions { display: flex; gap: 12px; padding-top: 24px; }
+  .post .btn { padding: 14px 28px; font-family: "JetBrains Mono", monospace; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--cyan); background: transparent; color: var(--cyan); cursor: pointer; }
+  .post .btn:hover { background: var(--cyan); color: var(--bg); box-shadow: 0 0 24px rgba(0, 229, 255, 0.5); }
+  .post .btn.ghost { border-color: var(--muted); color: var(--muted); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>05 · TETRIS EFFECT</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">01 · menu</div>
+  <div class="head"><span>SYS // ZETAMAX</span><span>v1 · live</span></div>
+  <div class="wordmark glow-cyan">zeta<span class="accent">max</span></div>
+  <div class="tag">// timed mental arithmetic // score-attack</div>
+  <div class="picker">
+    <div class="card practice">
+      <div class="num">[1]</div>
+      <div class="name glow-cyan">Practice</div>
+      <div class="desc">Score-attack mode. Local high score. No sign-in. Beat your own ghost.</div>
+    </div>
+    <div class="card competitive">
+      <div class="num">[2]</div>
+      <div class="name glow-magenta">Competitive</div>
+      <div class="desc">Friend leaderboard. Daily ranking. The wedge moment lives here.</div>
+    </div>
+  </div>
+  <div class="footer-row"><span>1 PRACTICE · 2 COMPETITIVE · ESC EXIT</span><span>BUILD 7842</span></div>
+</section>
+
+<section class="drill">
+  <div class="section-tag">02 · drill // practice</div>
+  <div class="top-strip">
+    <div class="stat score"><div class="k">SCORE</div><div class="v glow-cyan">14</div></div>
+    <div class="stat"><div class="k">TIME</div><div class="v">01:47</div></div>
+    <div class="stat streak"><div class="k">STREAK</div><div class="v glow-magenta">×3</div></div>
+  </div>
+  <div class="stage">
+    <div class="problem">47<span class="op">+</span>38</div>
+    <div class="typed glow-cyan">85<span class="cursor"></span></div>
+    <div class="multiplier glow-magenta">+3 STREAK BONUS</div>
+  </div>
+  <div class="keys-row">
+    <span><b>TAB</b>SKIP</span>
+    <span><b>ENTER</b>SUBMIT</span>
+    <span><b>BS</b>DELETE</span>
+    <span><b>ESC</b>PAUSE</span>
+  </div>
+</section>
+
+<section class="post">
+  <div class="section-tag">03 · round complete</div>
+  <div class="stage">
+    <div>
+      <div class="label">PERSONAL BEST</div>
+      <div class="big">39</div>
+      <div class="meta">CORRECT OF 42 · 93% ACCURACY</div>
+    </div>
+    <div class="grid-stats">
+      <div class="cell up"><div class="k">TODAY HIGH</div><div class="v">39 ↑</div></div>
+      <div class="cell"><div class="k">LIFETIME</div><div class="v">52</div></div>
+      <div class="cell"><div class="k">MAX STREAK</div><div class="v">×7</div></div>
+      <div class="cell"><div class="k">MEAN MS</div><div class="v">1340</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn">DRILL AGAIN</button>
+      <button class="btn ghost">MENU</button>
+    </div>
+  </div>
+</section>
+</body>
+</html>

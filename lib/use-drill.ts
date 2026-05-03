@@ -5,6 +5,8 @@ import {
   createDrill,
   type Drill,
   type DrillState,
+  type GeneratorConfig,
+  type KeyBinds,
 } from "@/lib/drill";
 
 /**
@@ -15,16 +17,18 @@ import {
  * its state lives in a closure, getState() is O(1), and the input field updates
  * are imperative (bypassing React's reconciler).
  *
- * Pass a stable seed string. When seed or durationMs changes, a fresh drill
- * is created (state resets).
+ * Pass a stable seed string. When seed, durationMs, or generatorConfig
+ * changes, a fresh drill is created (state resets).
  */
 export function useDrill(
   seed: string,
   durationMs?: number,
+  generatorConfig?: GeneratorConfig,
+  keybinds?: KeyBinds,
 ): { state: DrillState; drill: Drill } {
   const drill = useMemo(
-    () => createDrill({ seed, durationMs }),
-    [seed, durationMs],
+    () => createDrill({ seed, durationMs, generatorConfig, keybinds }),
+    [seed, durationMs, generatorConfig, keybinds],
   );
 
   // tick is a force-render counter; we don't use its value

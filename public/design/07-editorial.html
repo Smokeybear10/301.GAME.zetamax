@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 Editorial — Zetamax mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --paper: #fafaf6;
+    --paper-2: #f0eee2;
+    --ink: #1a1612;
+    --rule: #d8d2c2;
+    --rust: #a52a2a;
+    --rust-dim: #823c2a;
+    --muted: #6b6358;
+  }
+  html, body { background: var(--paper); color: var(--ink); font-family: Inter, system-ui, sans-serif; font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: var(--ink); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: var(--paper); border-bottom: 1px solid var(--ink); display: flex; justify-content: space-between; padding: 10px 32px; font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .topnav a { text-decoration: none; }
+  section { min-height: 100vh; padding: 48px 8vw; border-bottom: 1px solid var(--ink); display: flex; flex-direction: column; }
+  .section-tag { font-family: "Space Mono", monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--rust); text-transform: uppercase; margin-bottom: 32px; }
+  .rule { border-top: 1px solid var(--ink); margin: 16px 0; }
+  .rule-soft { border-top: 1px solid var(--rule); margin: 12px 0; }
+  .double { border-top: 3px double var(--ink); margin: 24px 0; }
+  .smcaps { font-family: Inter, sans-serif; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+
+  /* MENU = magazine cover */
+  .menu .masthead { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 8px; border-bottom: 4px solid var(--ink); margin-bottom: 32px; font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .menu .masthead .left { font-weight: 700; }
+  .menu h1.cover { font-family: "Playfair Display", Georgia, serif; font-weight: 900; font-size: clamp(72px, 14vw, 220px); line-height: 0.85; letter-spacing: -0.04em; margin-bottom: 24px; }
+  .menu h1.cover em { font-style: italic; color: var(--rust); }
+  .menu .deck { font-family: "Playfair Display", Georgia, serif; font-style: italic; font-size: clamp(20px, 2.4vw, 28px); line-height: 1.45; max-width: 56ch; margin-bottom: 48px; color: var(--ink); }
+  .menu .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  @media (max-width: 720px) { .menu .toc { grid-template-columns: 1fr; } }
+  .menu .toc-item { padding: 32px 24px 32px 0; border-right: 1px solid var(--rule); cursor: pointer; }
+  .menu .toc-item:last-child { border-right: none; padding-left: 24px; padding-right: 0; }
+  .menu .toc-item:hover { background: var(--paper-2); }
+  .menu .toc-item .num { font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; margin-bottom: 6px; }
+  .menu .toc-item .title { font-family: "Playfair Display", serif; font-weight: 700; font-size: 36px; line-height: 1; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .menu .toc-item .desc { font-size: 14px; line-height: 1.5; color: var(--muted); max-width: 36ch; }
+  .menu .toc-item .arrow { margin-top: 24px; font-family: "Space Mono", monospace; font-size: 11px; color: var(--rust); letter-spacing: 0.12em; text-transform: uppercase; }
+  .menu .colophon { margin-top: auto; padding-top: 24px; font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; }
+
+  /* DRILL = article-like, with running header */
+  .drill .running-head { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--ink); margin-bottom: 56px; font-family: "Space Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+  .drill .running-head .live-time { font-family: "Space Mono", monospace; font-weight: 700; color: var(--rust); }
+  .drill .stage { flex: 1; display: grid; grid-template-columns: 2fr 1fr; gap: 40px; align-items: center; }
+  @media (max-width: 720px) { .drill .stage { grid-template-columns: 1fr; } }
+  .drill .center .label { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--rust); text-transform: uppercase; margin-bottom: 16px; }
+  .drill .problem { font-family: "Playfair Display", Georgia, serif; font-weight: 400; font-size: clamp(72px, 14vw, 200px); line-height: 0.95; letter-spacing: -0.03em; }
+  .drill .problem .op { font-style: italic; color: var(--rust); margin: 0 0.15em; }
+  .drill .typed { font-family: "Playfair Display", Georgia, serif; font-weight: 700; font-size: clamp(72px, 14vw, 200px); line-height: 0.95; letter-spacing: -0.03em; color: var(--rust); margin-top: 16px; }
+  .drill .typed .cur { display: inline-block; width: 0.06em; height: 0.85em; background: var(--rust); vertical-align: -0.05em; margin-left: 0.05em; animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .drill .sidebar { padding: 24px; border: 1px solid var(--ink); }
+  .drill .sidebar h3 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 18px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+  .drill .sidebar table { width: 100%; }
+  .drill .sidebar td { padding: 6px 0; font-size: 14px; }
+  .drill .sidebar td:last-child { text-align: right; font-family: "Space Mono", monospace; font-weight: 700; }
+  .drill .footnote { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--rule); font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: flex; gap: 24px; }
+
+  /* POST = printed ticket / receipt */
+  .post .container { display: grid; grid-template-columns: 5fr 4fr; gap: 32px; flex: 1; align-items: stretch; }
+  @media (max-width: 720px) { .post .container { grid-template-columns: 1fr; } }
+  .post .ticket { padding: 48px 36px; background: var(--paper-2); border: 2px solid var(--ink); position: relative; display: flex; flex-direction: column; }
+  .post .ticket::before { content: "ZP"; position: absolute; top: 8px; right: 8px; font-family: "Space Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; }
+  .post .ticket .stamp { font-family: "Space Mono", monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--rust); margin-bottom: 12px; }
+  .post .ticket h2 { font-family: "Playfair Display", serif; font-weight: 700; font-size: 36px; line-height: 1; margin-bottom: 32px; letter-spacing: -0.02em; }
+  .post .ticket h2 em { font-style: italic; color: var(--rust); }
+  .post .ticket .big-num { font-family: "Playfair Display", serif; font-weight: 900; font-size: clamp(120px, 22vw, 240px); line-height: 0.85; margin-bottom: 16px; letter-spacing: -0.04em; }
+  .post .ticket .deck { font-family: "Playfair Display", serif; font-style: italic; font-size: 22px; line-height: 1.4; margin-bottom: 32px; max-width: 36ch; }
+  .post .ticket .stats-table { width: 100%; border-collapse: collapse; margin-top: auto; }
+  .post .ticket .stats-table tr { border-bottom: 1px solid var(--rule); }
+  .post .ticket .stats-table tr:last-child { border-bottom: 1px solid var(--ink); }
+  .post .ticket .stats-table td { padding: 10px 0; font-size: 14px; }
+  .post .ticket .stats-table td.k { color: var(--muted); }
+  .post .ticket .stats-table td.v { text-align: right; font-family: "Space Mono", monospace; font-weight: 700; }
+  .post .ticket .stats-table td.v.up { color: var(--rust); }
+  .post .right { display: flex; flex-direction: column; gap: 24px; }
+  .post .right .quote { padding: 32px 24px; background: transparent; border-left: 4px solid var(--rust); flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .post .right .quote q { display: block; font-family: "Playfair Display", serif; font-style: italic; font-size: 22px; line-height: 1.4; margin-bottom: 12px; quotes: "\201C" "\201D"; }
+  .post .right .quote .attribution { font-family: "Space Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .post .actions { display: flex; gap: 12px; }
+  .post .btn { padding: 14px 24px; background: var(--ink); color: var(--paper); border: none; font-family: Inter, sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; flex: 1; }
+  .post .btn:hover { background: var(--rust); }
+  .post .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <span><a href="index.html">← all directions</a></span>
+  <span>07 · Editorial Print</span>
+  <span>menu / drill / post-round</span>
+</nav>
+
+<section class="menu">
+  <div class="section-tag">cover · 01</div>
+  <div class="masthead">
+    <span class="left">zetamax</span>
+    <span>vol 1 · no 1</span>
+    <span>printed locally · friday</span>
+    <span>price: free</span>
+  </div>
+  <h1 class="cover">A drill for the<br><em>two-minute</em> mind.</h1>
+  <p class="deck">Timed mental arithmetic, restored to its essentials. Open the page. Drill for two minutes. The friend leaderboard is offered, not required.</p>
+  <div class="toc">
+    <div class="toc-item">
+      <div class="num">№ 01</div>
+      <div class="title">Practice</div>
+      <p class="desc">Drill anytime, on demand. No sign-in. Personal bests stored in your browser. Exactly the Zetamac feel.</p>
+      <div class="arrow">begin →</div>
+    </div>
+    <div class="toc-item">
+      <div class="num">№ 02</div>
+      <div class="title">Competitive</div>
+      <p class="desc">Sign in. Invite three friends. Your daily best ranks against theirs, by Eastern Time. The wedge moment lives here.</p>
+      <div class="arrow">begin →</div>
+    </div>
+  </div>
+  <div class="colophon">
+    <span>set in playfair, inter, space mono</span>
+    <span>v1 · still cooking</span>
+  </div>
+</section>
+
+<section class="drill">
+  <div class="section-tag">column · 02 · drill in progress</div>
+  <div class="running-head">
+    <span>zetamax / practice — classic 120s</span>
+    <span><span class="live-time">01:47</span> remaining · score 14 · streak ×3</span>
+  </div>
+  <div class="stage">
+    <div class="center">
+      <div class="label">problem 015</div>
+      <div class="problem">47<span class="op">+</span>38</div>
+      <div class="typed">85<span class="cur"></span></div>
+    </div>
+    <div class="sidebar">
+      <h3>This round</h3>
+      <table>
+        <tr><td>Score</td><td>14</td></tr>
+        <tr><td>Time left</td><td>01:47</td></tr>
+        <tr><td>Streak</td><td>×3</td></tr>
+        <tr><td>Accuracy</td><td>100%</td></tr>
+        <tr><td>Mean latency</td><td>1.18 s</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footnote">
+    <span>Tab — skip</span>
+    <span>Enter — submit</span>
+    <span>Backspace — delete</span>
+    <span>Esc — pause</span>
+  </div>
+</section>
+
+<section class="post">
+  <div class="section-tag">column · 03 · post-round</div>
+  <div class="container">
+    <div class="ticket">
+      <div class="stamp">round complete · 12:47</div>
+      <h2>The <em>thirty-ninth</em>.</h2>
+      <div class="big-num">39</div>
+      <p class="deck">A new personal best for the day, up from 34. Lifetime best holds at 52. The drill remains.</p>
+      <table class="stats-table">
+        <tr><td class="k">Today</td><td class="v up">39 ↑ 34</td></tr>
+        <tr><td class="k">Lifetime</td><td class="v">52</td></tr>
+        <tr><td class="k">Accuracy</td><td class="v">93%</td></tr>
+        <tr><td class="k">Mean latency</td><td class="v">1.34 s</td></tr>
+        <tr><td class="k">Friend rank</td><td class="v">— sign in</td></tr>
+      </table>
+    </div>
+    <div class="right">
+      <div class="quote">
+        <q>The keyboard feel is the moat. The leaderboard is the social hook. Everything else is patience.</q>
+        <span class="attribution">— from the Zetamax design doc</span>
+      </div>
+      <div class="actions">
+        <button class="btn">Drill again</button>
+        <button class="btn ghost">Menu</button>
+      </div>
+    </div>
+  </div>
+</section>
+</body>
+</html>

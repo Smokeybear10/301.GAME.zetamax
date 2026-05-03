@@ -62,6 +62,8 @@ export type DrillState = {
   msRemaining: number;
 };
 
+import type { GeneratorConfig, KeyBinds } from "./config";
+
 export type DrillConfig = {
   /** Stable string seed. Determines the entire problem stream. */
   seed: string;
@@ -69,4 +71,8 @@ export type DrillConfig = {
   durationMs?: number;
   /** Time source. Defaults to performance.now(). Inject for tests. */
   now?: () => number;
+  /** Generator config (op toggles + ranges). Defaults to ZETAMAC_DEFAULTS. */
+  generatorConfig?: GeneratorConfig;
+  /** Submit/skip/delete bindings. Defaults to Enter/Tab/Backspace. */
+  keybinds?: KeyBinds;
 };

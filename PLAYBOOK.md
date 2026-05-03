@@ -1,6 +1,6 @@
-# Greenfield Playbook — the prompts that got Zetaprime to a shippable v1 spec + clean repo
+# Greenfield Playbook — the prompts that got Zetamax to a shippable v1 spec + clean repo
 
-Captured 2026-05-02 from a single session that produced DESIGN.md (v1, 547 lines), TODOS.md (210 lines), a test plan artifact, a CEO plan, and a clean Next.js + Supabase repo at `~/Github/Zetaprime/` ready to start building. Distilled here so the next project can run the same workflow without re-discovering it.
+Captured 2026-05-02 from a single session that produced DESIGN.md (v1, 547 lines), TODOS.md (210 lines), a test plan artifact, a CEO plan, and a clean Next.js + Supabase repo at `~/Github/Zetamax/` ready to start building. Distilled here so the next project can run the same workflow without re-discovering it.
 
 > **Move me later:** copy this to `~/.claude/templates/greenfield-playbook.md` to reuse across projects.
 

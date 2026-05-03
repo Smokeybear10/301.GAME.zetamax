@@ -102,4 +102,51 @@ describe("generateProblem", () => {
     }
     expect(differences).toBeGreaterThan(80);
   });
+
+  it("respects op enabled flags in the config", () => {
+    // Only addition enabled — every problem must be add.
+    const onlyAdd = {
+      ops: {
+        add: { enabled: true, aMin: 2, aMax: 100, bMin: 2, bMax: 100 },
+        sub: { enabled: false, aMin: 2, aMax: 100, bMin: 2, bMax: 100 },
+        mul: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+        div: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+      },
+    };
+    for (let i = 0; i < 200; i++) {
+      const p = generateProblem(seedHash, i, onlyAdd);
+      expect(p.op).toBe("add");
+    }
+  });
+
+  it("respects custom addition ranges", () => {
+    const tinyAdd = {
+      ops: {
+        add: { enabled: true, aMin: 1, aMax: 5, bMin: 1, bMax: 5 },
+        sub: { enabled: false, aMin: 2, aMax: 100, bMin: 2, bMax: 100 },
+        mul: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+        div: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+      },
+    };
+    for (let i = 0; i < 200; i++) {
+      const p = generateProblem(seedHash, i, tinyAdd);
+      expect(p.a).toBeGreaterThanOrEqual(1);
+      expect(p.a).toBeLessThanOrEqual(5);
+      expect(p.b).toBeGreaterThanOrEqual(1);
+      expect(p.b).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it("falls back to add if all ops are disabled", () => {
+    const allDisabled = {
+      ops: {
+        add: { enabled: false, aMin: 2, aMax: 100, bMin: 2, bMax: 100 },
+        sub: { enabled: false, aMin: 2, aMax: 100, bMin: 2, bMax: 100 },
+        mul: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+        div: { enabled: false, aMin: 2, aMax: 12, bMin: 2, bMax: 100 },
+      },
+    };
+    const p = generateProblem(seedHash, 0, allDisabled);
+    expect(p.op).toBe("add");
+  });
 });
