@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -282,7 +283,34 @@ function ProfileCard({
           Your leagues
         </Link>
       </section>
+
+      <SignOutLink />
     </div>
+  );
+}
+
+function SignOutLink() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleSignOut = useCallback(async () => {
+    setLoading(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.refresh();
+  }, [router]);
+
+  return (
+    <section className="pt-8 border-t border-white/10">
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={loading}
+        className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-white transition-colors disabled:opacity-50"
+      >
+        {loading ? "signing out…" : "sign out"}
+      </button>
+    </section>
   );
 }
 

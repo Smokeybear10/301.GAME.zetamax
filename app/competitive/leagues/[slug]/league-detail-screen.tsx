@@ -212,7 +212,7 @@ function JoinPanel({
         disabled={joining}
         className="px-8 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
-        {joining ? "Joining…" : `Join ${preview.name}`}
+        {joining ? "Joining…" : "Join league"}
       </button>
       {error && (
         <p className="font-mono text-[11px] text-white/65 mt-4">{error}</p>
@@ -347,16 +347,16 @@ function ReadyPanel({
         </p>
       </section>
 
-      <section className="flex gap-3">
+      <section className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/competitive/ranked"
-          className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors"
+          className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors text-center"
         >
           Drill ranked
         </Link>
         <Link
           href="/competitive/leagues"
-          className="px-7 py-3 border border-white/15 hover:border-white text-white/65 hover:text-white text-sm transition-colors flex items-center"
+          className="px-7 py-3 border border-white/15 hover:border-white text-white/65 hover:text-white text-sm transition-colors text-center"
         >
           Your leagues
         </Link>

@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * OAuth code-exchange handler. Distinct from /auth/confirm which handles the
- * email-OTP flow — that route is unused now that v1 is Google-only, but it
- * stays in place so existing magic-link infra still type-checks.
+ * OAuth code-exchange handler. Google OAuth bounces here with a `code`
+ * param; we trade it for a session and redirect the user to `?next=`
+ * (defaulting to /competitive).
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
