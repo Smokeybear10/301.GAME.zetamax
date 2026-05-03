@@ -169,7 +169,7 @@ function SuccessPanel({
 
       <div className="w-full max-w-md mb-10 zp-fade zp-fade-4">
         <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3 text-center">
-          Today · friends
+          Best · last 30 days
         </p>
         <LeaderboardPanel />
       </div>
