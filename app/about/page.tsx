@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { ZpButton } from "@/components/ui/zp-button";
+import { SiteHead } from "@/app/_components/site-head";
+import { StatusBar } from "@/app/_components/status-bar";
+import { KeyboardShortcuts } from "@/app/_components/keyboard-shortcuts";
 import { TocRail } from "./toc-rail";
 
 export const metadata = {
@@ -17,12 +19,12 @@ const toc = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-black text-white antialiased">
-      <ZpButton asChild variant="chip" className="absolute top-6 left-6 z-10">
-        <Link href="/" aria-label="Back to home">← menu</Link>
-      </ZpButton>
+    <main className="min-h-screen bg-[#0c0c0c] text-white antialiased">
+      <div className="max-w-[1180px] mx-auto p-5">
+        <SiteHead current="about" />
+      </div>
 
-      <div className="max-w-[1160px] mx-auto px-6 sm:px-10 lg:px-16 py-20 lg:py-24 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
+      <div className="max-w-[1160px] mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
 
         <TocRail items={toc} />
 
@@ -206,14 +208,15 @@ export default function AboutPage() {
             </ol>
           </section>
 
-          {/* Footer — existing pattern preserved (sequence numerals on nav cards are OK) */}
           <footer className="mt-14 sm:mt-16 pt-8 border-t border-white/10 flex items-end justify-between gap-8">
             <Link
-              href="/practice"
+              href="/practice/classic"
               className="group inline-block py-2"
               aria-label="Go to practice"
             >
-              <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">01</div>
+              <div className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-1.5">
+                next
+              </div>
               <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 transition-colors group-hover:border-white">
                 Drill →
               </div>
@@ -223,7 +226,9 @@ export default function AboutPage() {
               className="group inline-block py-2 text-right"
               aria-label="Go to competitive"
             >
-              <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">02</div>
+              <div className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-1.5">
+                or
+              </div>
               <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 transition-colors group-hover:border-white">
                 Compete →
               </div>
@@ -231,6 +236,11 @@ export default function AboutPage() {
           </footer>
         </article>
       </div>
+
+      <div className="max-w-[1180px] mx-auto px-5 pb-5">
+        <StatusBar />
+      </div>
+      <KeyboardShortcuts />
     </main>
   );
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { SiteHead } from "./_components/site-head";
+import { StatusBar } from "./_components/status-bar";
+import { KeyboardShortcuts } from "./_components/keyboard-shortcuts";
 import { YourDay } from "./home/your-day";
 import { Heatmap } from "./home/heatmap";
 import { Focus } from "./home/focus";
-import { KeyboardShortcuts } from "./home/keyboard-shortcuts";
 
 export const metadata = {
   title: "zetamax — timed mental math drill",
@@ -141,15 +143,6 @@ function formatHM({ h, m }: { h: number; m: number }): string {
   return `${h}h ${mm}m`;
 }
 
-function formatLongDate(): string {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date());
-}
-
 function formatAgo(iso: string): string {
   const then = new Date(iso).getTime();
   const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
@@ -168,7 +161,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-[#0c0c0c] text-white antialiased">
       <div className="max-w-[1180px] mx-auto p-5">
-        <Head data={data} />
+        <SiteHead current="home" />
 
         <section className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 mb-4">
           <PlayRanked lastRanked={data.lastRanked} loggedIn={!!data.user} />
@@ -185,7 +178,7 @@ export default async function Home() {
 
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <ModeTile
-            href="/practice"
+            href="/practice/classic"
             badge="NO SIGN-IN"
             name="Practice"
             sub={<>local-only · nothing leaves your device</>}
@@ -215,11 +208,11 @@ export default async function Home() {
             cta="enter →"
           />
           <ModeTile
-            href="/me"
-            badge="STATS · 30D"
-            name="Me"
-            sub={<>trend · accuracy · heatmap · focus</>}
-            cta="view →"
+            href="/practice/learn"
+            badge="AUTO-TARGET"
+            name="Learn"
+            sub={<>drills your weakest pattern · local-only</>}
+            cta="drill →"
           />
         </section>
 
@@ -232,61 +225,6 @@ export default async function Home() {
       </div>
       <KeyboardShortcuts />
     </main>
-  );
-}
-
-function Head({ data }: { data: HomeData }) {
-  return (
-    <header className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
-      <Link href="/" className="font-sans text-[22px] leading-none tracking-[-0.04em] text-white">
-        <span className="font-extralight">zeta</span>
-        <span className="font-black">max</span>
-      </Link>
-      <span className="text-[11px] text-white/55 tracking-[0.04em] hidden sm:block font-mono">
-        {formatLongDate()} · <span className="text-white">drill window open</span> · daily resets in {data.dailyResetIn}
-      </span>
-      <HeadLink href="/about" className="hidden sm:inline-flex">about</HeadLink>
-      <HeadLink href="/practice" className="hidden md:inline-flex">practice</HeadLink>
-      <HeadLink href="/competitive" className="hidden md:inline-flex">compete</HeadLink>
-      {data.user ? (
-        <Link
-          href="/me"
-          className="flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-white border border-white/[0.12] px-3.5 py-1.5 hover:border-white/[0.28] transition-colors font-mono"
-        >
-          <span className="block w-1.5 h-1.5 bg-white rounded-full" aria-hidden />
-          {data.user.displayName}
-        </Link>
-      ) : (
-        <Link
-          href="/auth/login"
-          className="flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-white/85 border border-white/[0.12] px-3.5 py-1.5 hover:border-white/[0.28] hover:text-white transition-colors font-mono"
-        >
-          sign in
-        </Link>
-      )}
-    </header>
-  );
-}
-
-function HeadLink({
-  href,
-  children,
-  className = "",
-}: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={
-        "text-[11px] tracking-[0.18em] uppercase text-white/55 px-2.5 py-1.5 border border-transparent hover:text-white hover:border-white/[0.12] transition-colors font-mono " +
-        className
-      }
-    >
-      {children}
-    </Link>
   );
 }
 
@@ -461,28 +399,3 @@ function ModeTile({
   );
 }
 
-function StatusBar() {
-  return (
-    <footer className="bg-[#111] border border-white/[0.12] px-[18px] py-2.5 flex justify-between items-center text-[10.5px] tracking-[0.18em] uppercase text-white/55 font-mono">
-      <div className="flex gap-4 sm:gap-[18px] flex-wrap">
-        <Hint k="↩" label="start" />
-        <Hint k="P" label="practice" />
-        <Hint k="D" label="daily" />
-        <Hint k="M" label="me" />
-        <Hint k="A" label="about" />
-      </div>
-      <div className="text-white">v1 · {new Date().toISOString().slice(0, 10)}</div>
-    </footer>
-  );
-}
-
-function Hint({ k, label }: { k: string; label: string }) {
-  return (
-    <span className="inline-flex items-baseline">
-      <span className="bg-white/[0.06] border border-white/[0.12] text-white px-1.5 mr-1.5 text-[10px]">
-        {k}
-      </span>
-      {label}
-    </span>
-  );
-}
