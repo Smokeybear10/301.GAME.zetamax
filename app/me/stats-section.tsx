@@ -13,8 +13,10 @@ import {
   summarizeByOp,
   summarizeMulFacts,
 } from "@/lib/practice-stats";
+import { ZpButton } from "@/components/ui/zp-button";
 import { MulFactGrid } from "./mul-fact-grid";
 import { OpBars } from "./op-bars";
+import { PatternsSection } from "./patterns-section";
 import { ScoreSparkline } from "./score-sparkline";
 
 const SPARKLINE_WINDOW = 30;
@@ -100,21 +102,17 @@ export function StatsSection() {
         <MulFactGrid facts={aggregates.facts} />
       </Section>
 
+      <Section label="Learn">
+        <PatternsSection rows={rows} />
+      </Section>
+
       <footer className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-8 border-t border-white/10">
-        <button
-          type="button"
-          onClick={handleExport}
-          className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/65 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
-        >
+        <ZpButton variant="chip" onClick={handleExport}>
           Export JSON
-        </button>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 hover:text-white border border-white/10 hover:border-white/30 px-4 py-2 transition-colors"
-        >
+        </ZpButton>
+        <ZpButton variant="chip" onClick={handleReset}>
           Reset all stats
-        </button>
+        </ZpButton>
         <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 sm:ml-auto sm:self-center">
           stored locally · this device only
         </p>
@@ -188,12 +186,9 @@ function EmptyState() {
         Per-operation accuracy, latency trends, and a multiplication-fact heatmap
         — all computed locally from your rounds.
       </p>
-      <Link
-        href="/practice"
-        className="inline-block px-7 py-3 bg-white text-black font-medium text-sm border border-white hover:bg-transparent hover:text-white transition-colors"
-      >
-        Start drilling
-      </Link>
+      <ZpButton asChild variant="primary">
+        <Link href="/practice">Start drilling</Link>
+      </ZpButton>
     </div>
   );
 }

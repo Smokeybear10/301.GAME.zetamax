@@ -9,6 +9,12 @@ import {
   type KeyBinds,
 } from "@/lib/drill";
 
+export type DrillModeOpts = {
+  terminationMode?: "time" | "count";
+  targetCount?: number;
+  disableSkip?: boolean;
+};
+
 /**
  * React hook wrapping the drill engine.
  *
@@ -17,18 +23,32 @@ import {
  * its state lives in a closure, getState() is O(1), and the input field updates
  * are imperative (bypassing React's reconciler).
  *
- * Pass a stable seed string. When seed, durationMs, or generatorConfig
- * changes, a fresh drill is created (state resets).
+ * Pass a stable seed string. When seed, durationMs, generatorConfig, or any
+ * mode flag changes, a fresh drill is created (state resets).
  */
 export function useDrill(
   seed: string,
   durationMs?: number,
   generatorConfig?: GeneratorConfig,
   keybinds?: KeyBinds,
+  modeOpts?: DrillModeOpts,
 ): { state: DrillState; drill: Drill } {
+  const terminationMode = modeOpts?.terminationMode;
+  const targetCount = modeOpts?.targetCount;
+  const disableSkip = modeOpts?.disableSkip;
+
   const drill = useMemo(
-    () => createDrill({ seed, durationMs, generatorConfig, keybinds }),
-    [seed, durationMs, generatorConfig, keybinds],
+    () =>
+      createDrill({
+        seed,
+        durationMs,
+        generatorConfig,
+        keybinds,
+        terminationMode,
+        targetCount,
+        disableSkip,
+      }),
+    [seed, durationMs, generatorConfig, keybinds, terminationMode, targetCount, disableSkip],
   );
 
   // tick is a force-render counter; we don't use its value

@@ -129,3 +129,97 @@ describe("validateRun", () => {
     expect(result.problemsAttempted).toBe(3);
   });
 });
+
+// ---------------------------------------------------------------------------
+// count mode (Daily v2)
+// ---------------------------------------------------------------------------
+describe("validateRun — count mode", () => {
+  const answerKey = Array.from({ length: 50 }, (_, i) => 100 + i);
+  const baseCountInput = {
+    answerKey,
+    events: [] as AnswerEvent[],
+    startedAtMs: 0,
+    completedAtMs: 240_000, // 4 min — under the 5 min cap
+    durationMs: 300_000,
+    targetCount: 50,
+  };
+
+  function makeCompletedEvents(): AnswerEvent[] {
+    return Array.from({ length: 50 }, (_, i) =>
+      ev({
+        problemId: `p${i}`,
+        typed: String(answerKey[i]),
+        latencyMs: 4_000,
+        submittedAt: (i + 1) * 4_000,
+      }),
+    );
+  }
+
+  it("accepts a complete run that hits targetCount under the cap", () => {
+    const result = validateRun({
+      ...baseCountInput,
+      events: makeCompletedEvents(),
+    });
+    expect(result.status).toBe("ok");
+    expect(result.score).toBe(50);
+    expect(result.durationMs).toBe(240_000);
+  });
+
+  it("rejects a partial run as rejected_incomplete", () => {
+    const events = makeCompletedEvents().slice(0, 40);
+    const result = validateRun({
+      ...baseCountInput,
+      events,
+      completedAtMs: 300_000, // hit the cap
+    });
+    expect(result.status).toBe("rejected_incomplete");
+    expect(result.score).toBe(0);
+  });
+
+  it("rejects a run that includes a skip event", () => {
+    const events = makeCompletedEvents();
+    // Replace one event with an empty-typed (skip) event but with the same id
+    events[10] = ev({
+      problemId: "p10",
+      typed: "",
+      latencyMs: 1_000,
+      submittedAt: 11 * 4_000,
+    });
+    const result = validateRun({
+      ...baseCountInput,
+      events,
+    });
+    expect(result.status).toBe("rejected_incomplete");
+  });
+
+  it("count mode does NOT enforce the wallclock floor", () => {
+    // Speed-run: finished in 60s (well under the 300s cap, well under
+    // durationMs - 2s in time-mode terms). Time-mode would reject this
+    // as rejected_wallclock; count mode accepts it.
+    const events = Array.from({ length: 50 }, (_, i) =>
+      ev({
+        problemId: `p${i}`,
+        typed: String(answerKey[i]),
+        latencyMs: 1_200,
+        submittedAt: (i + 1) * 1_200,
+      }),
+    );
+    const result = validateRun({
+      ...baseCountInput,
+      events,
+      completedAtMs: 60_000, // 1 min
+    });
+    expect(result.status).toBe("ok");
+    expect(result.durationMs).toBe(60_000);
+  });
+
+  it("rejects a stale count run (> 30 min wallclock)", () => {
+    const events = makeCompletedEvents();
+    const result = validateRun({
+      ...baseCountInput,
+      events,
+      completedAtMs: 31 * 60 * 1_000, // 31 min — beyond MAX_STALE
+    });
+    expect(result.status).toBe("rejected_wallclock");
+  });
+});

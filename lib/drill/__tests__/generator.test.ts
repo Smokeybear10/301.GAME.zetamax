@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { ZETAMAC_DEFAULTS, type GeneratorConfig } from "../config";
+import { deriveTags } from "../derive-tags";
 import { generateFromSeed, generateProblem } from "../generator";
 import { hashString } from "../rng";
 
@@ -148,5 +150,93 @@ describe("generateProblem", () => {
     };
     const p = generateProblem(seedHash, 0, allDisabled);
     expect(p.op).toBe("add");
+  });
+});
+
+describe("generateProblem — tag targeting", () => {
+  const seedHash = hashString("targeting-test");
+
+  function targeted(tags: string[]): GeneratorConfig {
+    return {
+      ops: ZETAMAC_DEFAULTS.ops,
+      // tag union is widened by the cast — the runtime check is in deriveTags.
+      targeting: { tags: tags as never },
+    };
+  }
+
+  it("biases the stream heavily toward a single target tag", () => {
+    const config = targeted(["by-9"]);
+    let onTarget = 0;
+    const samples = 200;
+    for (let i = 0; i < samples; i++) {
+      const p = generateProblem(seedHash, i, config);
+      const tags = deriveTags(p.a, p.b, p.op);
+      if (tags.attribution === "by-9") onTarget++;
+    }
+    // Rejection-sampling with budget 50 against a tag that's reasonably
+    // achievable in Zetamac defaults should hit most of the time. At least 80%.
+    expect(onTarget / samples).toBeGreaterThan(0.8);
+  });
+
+  it("rotates across multiple target tags roughly evenly", () => {
+    // Pick three tags that are reasonably achievable under Zetamac defaults
+    // so rejection sampling reliably succeeds inside budget 50. (Very rare
+    // tags like "double" are intentionally under-sampled — that's expected
+    // behaviour, but it makes for a flaky uniformity check.)
+    const targets = ["mul-large", "add-no-carry", "sub-no-borrow"];
+    const config = targeted(targets);
+    const counts: Record<string, number> = {};
+    const samples = 600;
+    for (let i = 0; i < samples; i++) {
+      const p = generateProblem(seedHash, i, config);
+      const tags = deriveTags(p.a, p.b, p.op);
+      counts[tags.attribution] = (counts[tags.attribution] ?? 0) + 1;
+    }
+    // Each target should appear meaningfully — at least 20% of the stream.
+    for (const t of targets) {
+      expect(counts[t] ?? 0).toBeGreaterThan(samples * 0.2);
+    }
+  });
+
+  it("preserves the deterministic invariant (same inputs → same problem)", () => {
+    const config = targeted(["by-9", "double"]);
+    const p1 = generateProblem(seedHash, 0, config);
+    const p2 = generateProblem(seedHash, 0, config);
+    expect(p1).toEqual(p2);
+  });
+
+  it("uses canonical pIndex ids regardless of which candidate matched", () => {
+    const config = targeted(["by-9"]);
+    expect(generateProblem(seedHash, 0, config).id).toBe("p0");
+    expect(generateProblem(seedHash, 7, config).id).toBe("p7");
+  });
+
+  it("falls back gracefully when target is impossible", () => {
+    // Disable mul — "by-9" is unreachable. Generator should NOT loop forever;
+    // it returns the last candidate (some non-by-9 problem) rather than
+    // throwing.
+    const config: GeneratorConfig = {
+      ops: {
+        add: ZETAMAC_DEFAULTS.ops.add,
+        sub: ZETAMAC_DEFAULTS.ops.sub,
+        mul: { ...ZETAMAC_DEFAULTS.ops.mul, enabled: false },
+        div: { ...ZETAMAC_DEFAULTS.ops.div, enabled: false },
+      },
+      targeting: { tags: ["by-9"] as never },
+    };
+    const p = generateProblem(seedHash, 0, config);
+    // Should still produce a valid problem from the remaining ops.
+    expect(["add", "sub"]).toContain(p.op);
+    expect(p.id).toBe("p0");
+  });
+
+  it("empty targeting falls through to base behavior", () => {
+    const empty: GeneratorConfig = {
+      ops: ZETAMAC_DEFAULTS.ops,
+      targeting: { tags: [] },
+    };
+    const p1 = generateProblem(seedHash, 0, empty);
+    const p2 = generateProblem(seedHash, 0); // base call
+    expect(p1).toEqual(p2);
   });
 });

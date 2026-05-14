@@ -64,10 +64,12 @@ export type DrillState = {
 
 import type { GeneratorConfig, KeyBinds } from "./config";
 
+export type TerminationMode = "time" | "count";
+
 export type DrillConfig = {
   /** Stable string seed. Determines the entire problem stream. */
   seed: string;
-  /** Round duration in ms. Defaults to 120_000 (Zetamac classic). */
+  /** Round duration in ms. In count mode, this is the hard time cap. Defaults to 120_000. */
   durationMs?: number;
   /** Time source. Defaults to performance.now(). Inject for tests. */
   now?: () => number;
@@ -75,4 +77,18 @@ export type DrillConfig = {
   generatorConfig?: GeneratorConfig;
   /** Submit/skip/delete bindings. Defaults to Enter/Tab/Backspace. */
   keybinds?: KeyBinds;
+  /**
+   * "time" (default): round ends at startedAt + durationMs.
+   * "count": round ends when correct-answer count hits `targetCount`, OR durationMs as a cap.
+   */
+  terminationMode?: TerminationMode;
+  /** Required when terminationMode === "count". Round ends after this many correct answers. */
+  targetCount?: number;
+  /**
+   * When true, the user must type the correct answer to advance.
+   * - Tab (skip key) is silently ignored.
+   * - Enter on a wrong typed answer is silently ignored.
+   * Used by Daily mode to force completion of every problem.
+   */
+  disableSkip?: boolean;
 };

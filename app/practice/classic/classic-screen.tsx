@@ -6,6 +6,7 @@ import type { Problem, RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { saveRun } from "@/lib/use-local-history";
 import { usePracticeConfig } from "@/lib/use-practice-config";
+import { ZpButton } from "@/components/ui/zp-button";
 import { MobileKeypad } from "./mobile-keypad";
 import { PostRoundSummary } from "./post-round-summary";
 import { SettingsModal } from "./settings-modal";
@@ -100,7 +101,9 @@ export function ClassicScreen() {
     if (state.status !== "ended" || savedRef.current) return;
     savedRef.current = true;
     const result: RoundResult = drill.end();
-    if (result.problemsAttempted > 0) saveRun("classic", seed, config.generator, result);
+    if (result.problemsAttempted > 0) {
+      saveRun("classic", seed, config.generator, result, config.durationMs);
+    }
   }, [state.status, drill, seed, config.generator]);
 
   const settingsAccessible = state.status !== "running";
@@ -168,30 +171,31 @@ export function ClassicScreen() {
           opposite side. Hidden during a running drill so it can't distract or
           be mis-clicked. */}
       {settingsAccessible && (
-        <Link
-          href="/practice"
-          aria-label="Back to practice modes"
-          title="Practice modes"
-          className="fixed top-3 left-3 sm:top-auto sm:bottom-6 sm:left-6 flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/65 hover:text-white hover:bg-white/[0.08] hover:border-white/30 transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
-        >
-          <span aria-hidden="true">←</span>
-          <span className="hidden sm:inline">modes</span>
-        </Link>
+        <ZpButton asChild variant="floating">
+          <Link
+            href="/practice"
+            aria-label="Back to practice modes"
+            title="Practice modes"
+          >
+            <span aria-hidden="true">←</span>
+            <span className="hidden sm:inline">modes</span>
+          </Link>
+        </ZpButton>
       )}
 
       {/* Settings — labeled chip, only visible when not drilling. Top-right on
           mobile (where the keypad fills the bottom), bottom-right on desktop. */}
       {settingsAccessible && (
-        <button
-          type="button"
+        <ZpButton
+          variant="floating"
           onClick={() => setShowSettings(true)}
           aria-label="Settings"
-          className="fixed top-3 right-3 sm:top-auto sm:bottom-6 sm:right-6 flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/65 hover:text-white hover:bg-white/[0.08] hover:border-white/30 transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
           title="Settings"
+          className="left-auto right-3 sm:left-auto sm:right-6"
         >
           <SettingsIcon />
           <span className="hidden sm:inline">settings</span>
-        </button>
+        </ZpButton>
       )}
 
       {state.status === "ended" && (

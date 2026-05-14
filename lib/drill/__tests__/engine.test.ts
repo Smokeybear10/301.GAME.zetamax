@@ -233,3 +233,133 @@ describe("createDrill — determinism", () => {
     }
   });
 });
+
+describe("createDrill — count termination", () => {
+  it("ends after targetCount correct answers", () => {
+    const clock = mockClock();
+    const drill = createDrill({
+      seed: "count-mode",
+      now: clock.now,
+      durationMs: 600_000,
+      terminationMode: "count",
+      targetCount: 3,
+    });
+    drill.start();
+    expect(drill.getState().status).toBe("running");
+
+    // Answer the first 3 problems correctly. Engine should end on the 3rd.
+    for (let i = 0; i < 3; i++) {
+      const p = drill.getState().currentProblem;
+      expect(p, `problem ${i} should exist`).not.toBeNull();
+      typeAnswer(drill, p!.answer);
+    }
+    expect(drill.getState().status).toBe("ended");
+    expect(drill.getState().score).toBe(3);
+
+    const result = drill.end();
+    expect(result.score).toBe(3);
+    expect(result.problemsAttempted).toBe(3);
+  });
+
+  it("does not end early on wrong answers in count mode", () => {
+    const clock = mockClock();
+    const drill = createDrill({
+      seed: "count-mode-wrongs",
+      now: clock.now,
+      durationMs: 600_000,
+      terminationMode: "count",
+      targetCount: 2,
+    });
+    drill.start();
+
+    // Answer one correctly, then submit a wrong answer (Enter).
+    typeAnswer(drill, drill.getState().currentProblem!.answer);
+    expect(drill.getState().score).toBe(1);
+    expect(drill.getState().status).toBe("running");
+
+    drill.handleKeystroke("0");
+    drill.handleKeystroke("Enter");
+    expect(drill.getState().score).toBe(1); // unchanged
+    expect(drill.getState().status).toBe("running"); // no termination
+
+    // Final correct answer triggers termination.
+    typeAnswer(drill, drill.getState().currentProblem!.answer);
+    expect(drill.getState().score).toBe(2);
+    expect(drill.getState().status).toBe("ended");
+  });
+
+  it("respects time cap in count mode (forfeit on cap hit)", () => {
+    const clock = mockClock();
+    const drill = createDrill({
+      seed: "cap-test",
+      now: clock.now,
+      durationMs: 60_000,
+      terminationMode: "count",
+      targetCount: 50,
+    });
+    drill.start();
+
+    typeAnswer(drill, drill.getState().currentProblem!.answer);
+    expect(drill.getState().score).toBe(1);
+
+    clock.advance(60_001);
+    drill.tick();
+    expect(drill.getState().status).toBe("ended");
+    expect(drill.getState().score).toBe(1); // far short of targetCount
+  });
+});
+
+describe("createDrill — disableSkip", () => {
+  it("ignores Tab when disableSkip is true", () => {
+    const clock = mockClock();
+    const drill = createDrill({
+      seed: "no-skip",
+      now: clock.now,
+      durationMs: 600_000,
+      disableSkip: true,
+    });
+    drill.start();
+    const before = drill.getState().currentProblem;
+    drill.handleKeystroke("Tab");
+    const after = drill.getState().currentProblem;
+    expect(after).toEqual(before); // problem hasn't advanced
+    expect(drill.getState().score).toBe(0);
+    expect(drill.getState().events.length).toBe(0); // no skip event recorded
+  });
+
+  it("ignores Enter when typed answer is wrong", () => {
+    const clock = mockClock();
+    const drill = createDrill({
+      seed: "no-give-up",
+      now: clock.now,
+      durationMs: 600_000,
+      disableSkip: true,
+    });
+    drill.start();
+    const correct = drill.getState().currentProblem!.answer;
+    const wrong = correct + 1;
+
+    for (const d of String(wrong)) drill.handleKeystroke(d);
+    drill.handleKeystroke("Enter");
+
+    // No advance: problem is the same, no events recorded.
+    expect(drill.getState().currentProblem!.answer).toBe(correct);
+    expect(drill.getState().events.length).toBe(0);
+    expect(drill.getState().typedAnswer).toBe(String(wrong)); // typed preserved
+
+    // User backspaces and types correct → auto-commits.
+    for (let i = 0; i < String(wrong).length; i++) drill.handleKeystroke("Backspace");
+    typeAnswer(drill, correct);
+    expect(drill.getState().score).toBe(1);
+    expect(drill.getState().events.length).toBe(1);
+  });
+
+  it("Tab still works normally when disableSkip is false (default)", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "default-skip", now: clock.now });
+    drill.start();
+    drill.handleKeystroke("Tab");
+    expect(drill.getState().events.length).toBe(1);
+    expect(drill.getState().events[0].correct).toBe(false);
+  });
+});

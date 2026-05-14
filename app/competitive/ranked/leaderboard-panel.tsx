@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type MyLeague = {
   league_id: string;
@@ -124,12 +125,9 @@ export function LeaderboardPanel() {
         <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 mb-4">
           no leagues yet
         </p>
-        <Link
-          href="/competitive/leagues"
-          className="inline-block px-5 py-2 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-[11px] tracking-[0.18em] uppercase"
-        >
-          join a league →
-        </Link>
+        <ZpButton asChild variant="chip">
+          <Link href="/competitive/leagues">join a league →</Link>
+        </ZpButton>
       </div>
     );
   }
@@ -199,9 +197,9 @@ export function LeaderboardPanel() {
                   {r.is_provisional && (
                     <span
                       title="Provisional — first 30 rated rounds"
-                      className="ml-1.5 text-[10px] align-middle"
+                      className="ml-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 align-middle"
                     >
-                      🧪
+                      provisional
                     </span>
                   )}
                 </span>

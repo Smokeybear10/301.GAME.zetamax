@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type MyLeague = {
   league_id: string;
@@ -16,12 +17,19 @@ type Row = {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
-  mean_score: number;
+  mean_duration_ms: number;
   runs_completed: number;
   runs_forfeited: number;
 };
 
 const PREFERRED_LEAGUE_KEY = "zetamax:preferred-league-slug";
+
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 function readPreferredSlug(): string | null {
   if (typeof window === "undefined") return null;
@@ -119,12 +127,9 @@ export function DailyLeaderboardPanel() {
         <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 mb-4">
           no leagues yet
         </p>
-        <Link
-          href="/competitive/leagues"
-          className="inline-block px-5 py-2 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-[11px] tracking-[0.18em] uppercase"
-        >
-          join a league →
-        </Link>
+        <ZpButton asChild variant="chip">
+          <Link href="/competitive/leagues">join a league →</Link>
+        </ZpButton>
       </div>
     );
   }
@@ -200,9 +205,9 @@ export function DailyLeaderboardPanel() {
                 </span>
                 <span
                   className="font-mono tabular-nums text-white"
-                  title="Mean score over completed daily runs"
+                  title="Mean time over completed daily runs"
                 >
-                  {Number(r.mean_score).toFixed(1)}
+                  {r.runs_completed > 0 ? formatTime(r.mean_duration_ms) : "—"}
                 </span>
               </div>
             );

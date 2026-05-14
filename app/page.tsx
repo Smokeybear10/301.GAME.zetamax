@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZpButton } from "@/components/ui/zp-button";
 
 export const metadata = {
   title: "zetamax — timed mental math drill",
@@ -61,12 +62,9 @@ export default function Home() {
       </div>
 
       {/* about — pinned to the bottom, lights up on hover */}
-      <Link
-        href="/about"
-        className="absolute bottom-6 px-7 py-2.5 border border-white/15 text-white/65 hover:text-white hover:border-white hover:bg-white/[0.04] transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
-      >
-        about
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute bottom-6 px-7 tracking-[0.28em]">
+        <Link href="/about">about</Link>
+      </ZpButton>
     </main>
   );
 }

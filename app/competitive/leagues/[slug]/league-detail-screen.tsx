@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type Preview = {
   league_id: string;
@@ -120,13 +121,9 @@ export function LeagueDetailScreen({ slug }: Props) {
 
   return (
     <main className="min-h-screen bg-black text-white antialiased">
-      <Link
-        href="/competitive/leagues"
-        aria-label="Back to your leagues"
-        className="absolute top-6 left-6 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-      >
-        ← leagues
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
+        <Link href="/competitive/leagues" aria-label="Back to your leagues">← leagues</Link>
+      </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
         {phase.tag === "loading" && (
@@ -174,12 +171,9 @@ function NotFoundState() {
         The link is wrong, expired, or you don&apos;t have access.
         Ask the person who shared it for a new link.
       </p>
-      <Link
-        href="/competitive/leagues"
-        className="inline-block px-6 py-2 border border-white/15 text-white/65 hover:text-white hover:border-white transition-colors font-mono text-xs tracking-[0.18em] uppercase"
-      >
-        your leagues
-      </Link>
+      <ZpButton asChild variant="chip">
+        <Link href="/competitive/leagues">your leagues</Link>
+      </ZpButton>
     </div>
   );
 }
@@ -206,14 +200,9 @@ function JoinPanel({
       <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 mb-12">
         {preview.member_count} {preview.member_count === 1 ? "member" : "members"}
       </p>
-      <button
-        type="button"
-        onClick={onJoin}
-        disabled={joining}
-        className="px-8 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-      >
+      <ZpButton variant="primary" onClick={onJoin} disabled={joining}>
         {joining ? "Joining…" : "Join league"}
-      </button>
+      </ZpButton>
       {error && (
         <p className="font-mono text-[11px] text-white/65 mt-4">{error}</p>
       )}
@@ -292,9 +281,9 @@ function ReadyPanel({
                     {r.is_provisional && (
                       <span
                         title="Provisional — first 30 rated rounds"
-                        className="ml-1.5 text-[10px] align-middle"
+                        className="ml-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 align-middle"
                       >
-                        🧪
+                        provisional
                       </span>
                     )}
                   </span>
@@ -334,13 +323,9 @@ function ReadyPanel({
           <code className="flex-1 px-4 py-3 bg-white/[0.04] border border-white/10 font-mono text-xs text-white/65 truncate">
             {shareUrl}
           </code>
-          <button
-            type="button"
-            onClick={onCopy}
-            className="px-5 py-3 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
-          >
+          <ZpButton variant="chip" onClick={onCopy}>
             {copied ? "copied" : "copy"}
-          </button>
+          </ZpButton>
         </div>
         <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 mt-3">
           anyone signed in with this link joins the league
@@ -348,18 +333,12 @@ function ReadyPanel({
       </section>
 
       <section className="flex flex-col sm:flex-row gap-3">
-        <Link
-          href="/competitive/ranked"
-          className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors text-center"
-        >
-          Drill ranked
-        </Link>
-        <Link
-          href="/competitive/leagues"
-          className="px-7 py-3 border border-white/15 hover:border-white text-white/65 hover:text-white text-sm transition-colors text-center"
-        >
-          Your leagues
-        </Link>
+        <ZpButton asChild variant="primary" className="text-center">
+          <Link href="/competitive/ranked">Drill ranked</Link>
+        </ZpButton>
+        <ZpButton asChild variant="secondary" className="text-center">
+          <Link href="/competitive/leagues">Your leagues</Link>
+        </ZpButton>
       </section>
     </>
   );

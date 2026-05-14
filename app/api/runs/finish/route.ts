@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateRun } from "@/lib/drill/validate";
+import { DAILY_DURATION_MS, DAILY_TARGET_COUNT } from "@/lib/drill/config";
 import type {
   EloOpponentBreakdown,
   FinishRunRequest,
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const { data: run } = await admin
     .from("runs")
-    .select("id, user_id, started_at, validation_status, answer_key, score")
+    .select("id, user_id, started_at, validation_status, answer_key, score, mode")
     .eq("id", body.run_id)
     .maybeSingle();
 
@@ -61,11 +62,17 @@ export async function POST(req: NextRequest) {
   const startedAtMs = new Date(run.started_at).getTime();
   const completedAtMs = Date.now();
 
+  // Daily runs are count-terminated and validated as fixed-length challenges:
+  // 50 correct answers required, no skips, no minimum-wallclock floor.
+  const isDaily = run.mode === "daily";
+
   const validation = validateRun({
     answerKey: run.answer_key as number[],
     events: body.events,
     startedAtMs,
     completedAtMs,
+    durationMs: isDaily ? DAILY_DURATION_MS : undefined,
+    targetCount: isDaily ? DAILY_TARGET_COUNT : undefined,
   });
 
   // Atomic update: only succeeds if still 'pending'. Race protection against
@@ -130,6 +137,8 @@ export async function POST(req: NextRequest) {
         opponent_count: number;
         is_provisional: boolean;
         breakdown: unknown;
+        baseline_delta: number;
+        expected_score: number;
       };
       const breakdown: EloOpponentBreakdown[] = Array.isArray(row.breakdown)
         ? (row.breakdown as EloOpponentBreakdown[])
@@ -140,6 +149,8 @@ export async function POST(req: NextRequest) {
         opponent_count: row.opponent_count,
         is_provisional: row.is_provisional,
         breakdown,
+        baseline_delta: row.baseline_delta ?? 0,
+        expected_score: row.expected_score ?? 35,
       };
     }
   }

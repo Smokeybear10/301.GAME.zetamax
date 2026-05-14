@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ZpButton } from "@/components/ui/zp-button";
 
 const NAME_MIN = 1;
 const NAME_MAX = 32;
@@ -44,11 +45,18 @@ type Rating = {
 };
 
 type DailySummary = {
-  mean_score: number;
+  mean_duration_ms: number;
   runs_completed: number;
   runs_forfeited: number;
   played_today: boolean;
 };
+
+function formatDailyTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 type Phase =
   | { tag: "loading" }
@@ -96,8 +104,8 @@ export function ProfileSection() {
       const daily =
         Array.isArray(dailyRows) && dailyRows.length > 0
           ? ({
-              mean_score: Number(
-                (dailyRows[0] as { mean_score: number }).mean_score ?? 0,
+              mean_duration_ms: Number(
+                (dailyRows[0] as { mean_duration_ms: number }).mean_duration_ms ?? 0,
               ),
               runs_completed: (dailyRows[0] as { runs_completed: number })
                 .runs_completed ?? 0,
@@ -164,12 +172,9 @@ function SignedOutCTA() {
         Profile shows your ranked rating and identity from your Google account.
         Practice stats below work without signing in.
       </p>
-      <Link
-        href="/auth/login"
-        className="inline-block px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors"
-      >
-        Continue with Google
-      </Link>
+      <ZpButton asChild variant="primary">
+        <Link href="/auth/login">Continue with Google</Link>
+      </ZpButton>
     </div>
   );
 }
@@ -187,8 +192,8 @@ function ProfileCard({
 }) {
   const provisional = (rating?.matches_played ?? 0) < 30;
   const matches = rating?.matches_played ?? 0;
-  const r = rating?.rating ?? 1500;
-  const peak = rating?.peak_rating ?? 1500;
+  const r = rating?.rating ?? 1200;
+  const peak = rating?.peak_rating ?? 1200;
 
   return (
     <div className="space-y-12 sm:space-y-14">
@@ -219,7 +224,7 @@ function ProfileCard({
           <Stat label="matches" value={`${matches}`} />
           <Stat
             label="status"
-            value={provisional ? "🧪 provisional" : "settled"}
+            value={provisional ? "provisional" : "rated"}
           />
         </div>
         {rating === null && (
@@ -229,8 +234,8 @@ function ProfileCard({
         )}
         {provisional && rating && (
           <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 mt-4">
-            provisional until {30 - matches} more rated{" "}
-            {30 - matches === 1 ? "round" : "rounds"}
+            {30 - matches} provisional{" "}
+            {30 - matches === 1 ? "round" : "rounds"} remaining
           </p>
         )}
       </section>
@@ -244,7 +249,7 @@ function ProfileCard({
             label="mean"
             value={
               daily && daily.runs_completed > 0
-                ? Number(daily.mean_score).toFixed(1)
+                ? formatDailyTime(daily.mean_duration_ms)
                 : "—"
             }
             highlight={!!(daily && daily.runs_completed > 0)}
@@ -264,24 +269,15 @@ function ProfileCard({
       </section>
 
       <section className="flex flex-col sm:flex-row gap-3">
-        <Link
-          href="/competitive/ranked"
-          className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors text-center"
-        >
-          Drill ranked
-        </Link>
-        <Link
-          href="/competitive/daily"
-          className="px-7 py-3 border border-white/15 text-white/65 hover:text-white hover:border-white text-sm transition-colors text-center"
-        >
-          Daily
-        </Link>
-        <Link
-          href="/competitive/leagues"
-          className="px-7 py-3 border border-white/10 text-white/65 hover:text-white hover:border-white text-sm transition-colors text-center"
-        >
-          Your leagues
-        </Link>
+        <ZpButton asChild variant="primary" className="text-center">
+          <Link href="/competitive/ranked">Drill ranked</Link>
+        </ZpButton>
+        <ZpButton asChild variant="secondary" className="text-center">
+          <Link href="/competitive/daily">Daily</Link>
+        </ZpButton>
+        <ZpButton asChild variant="secondary" className="text-center">
+          <Link href="/competitive/leagues">Your leagues</Link>
+        </ZpButton>
       </section>
 
       <SignOutLink />
@@ -410,22 +406,22 @@ function NameEditor({
             }}
           />
           <div className="flex gap-2">
-            <button
-              type="button"
+            <ZpButton
+              variant="primary"
+              size="sm"
               onClick={save}
               disabled={saving}
-              className="px-4 py-2 bg-white text-black font-medium text-xs hover:bg-transparent hover:text-white border border-white transition-colors disabled:opacity-40"
             >
               {saving ? "Saving…" : "Save"}
-            </button>
-            <button
-              type="button"
+            </ZpButton>
+            <ZpButton
+              variant="secondary"
+              size="sm"
               onClick={cancel}
               disabled={saving}
-              className="px-4 py-2 border border-white/15 text-white/65 hover:text-white hover:border-white text-xs transition-colors"
             >
               Cancel
-            </button>
+            </ZpButton>
           </div>
         </div>
         <div className="flex items-center justify-between gap-3 mt-2">

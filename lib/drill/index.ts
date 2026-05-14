@@ -6,6 +6,8 @@ export {
   ZETAMAC_DEFAULTS,
   PRACTICE_DEFAULTS,
   DEFAULT_DURATION_MS,
+  DAILY_DURATION_MS,
+  DAILY_TARGET_COUNT,
   DURATION_PRESETS_MS,
   KEYBIND_DEFAULTS,
   RESERVED_KEYS,
@@ -16,7 +18,10 @@ export type {
   OpRange,
   PracticeConfig,
   KeyBinds,
+  TargetingConfig,
 } from "./config";
+export type { TagKey, SkillTag, PatternTag } from "./derive-tags";
+export { deriveTags, TAG_VERSION } from "./derive-tags";
 export type {
   Op,
   Problem,

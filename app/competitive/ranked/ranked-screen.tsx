@@ -6,6 +6,7 @@ import { ZETAMAC_DEFAULTS, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { startRun } from "@/lib/runs-api";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
+import { ZpButton } from "@/components/ui/zp-button";
 import { RankedPostRound } from "./ranked-post-round";
 
 const DIGIT_KEYS = new Set([
@@ -46,7 +47,13 @@ export function RankedScreen() {
   const [attempt, setAttempt] = useState(0);
   const [start, setStart] = useState<StartState>({ phase: "loading" });
   const [submission, setSubmission] = useState<
-    | { runId: string; result: RoundResult; startedAtMs: number }
+    | {
+        runId: string;
+        seed: string;
+        durationMs: number;
+        result: RoundResult;
+        startedAtMs: number;
+      }
     | null
   >(null);
 
@@ -132,6 +139,8 @@ export function RankedScreen() {
     const result: RoundResult = drill.end();
     setSubmission({
       runId: start.runId,
+      seed: start.seed,
+      durationMs: start.durationMs,
       result,
       startedAtMs: startedAtMsRef.current ?? Date.now() - durationMs,
     });
@@ -216,20 +225,23 @@ export function RankedScreen() {
       />
 
       {showMenuChip && (
-        <Link
-          href="/competitive"
-          aria-label="Back to competitive modes"
-          title="Modes"
-          className="fixed top-3 left-3 sm:top-auto sm:bottom-6 sm:left-6 flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/65 hover:text-white hover:bg-white/[0.08] hover:border-white/30 transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
-        >
-          <span aria-hidden="true">←</span>
-          <span className="hidden sm:inline">modes</span>
-        </Link>
+        <ZpButton asChild variant="floating">
+          <Link
+            href="/competitive"
+            aria-label="Back to competitive modes"
+            title="Modes"
+          >
+            <span aria-hidden="true">←</span>
+            <span className="hidden sm:inline">modes</span>
+          </Link>
+        </ZpButton>
       )}
 
       {submission && (
         <RankedPostRound
           runId={submission.runId}
+          seed={submission.seed}
+          durationMs={submission.durationMs}
           result={submission.result}
           startedAtMs={submission.startedAtMs}
           onPlayAgain={onPlayAgain}
@@ -262,12 +274,9 @@ function ErrorState({ code }: { code: string }) {
         Round failed to start
       </p>
       <p className="text-white/75 mb-8 leading-relaxed">{copy}</p>
-      <Link
-        href="/competitive"
-        className="inline-block px-6 py-2 border border-white/10 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-xs tracking-[0.18em] uppercase"
-      >
-        back to modes
-      </Link>
+      <ZpButton asChild variant="chip">
+        <Link href="/competitive">back to modes</Link>
+      </ZpButton>
     </div>
   );
 }

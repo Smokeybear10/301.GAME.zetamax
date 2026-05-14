@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZpButton } from "@/components/ui/zp-button";
 
 export const metadata = {
   title: "Competitive — Zetamax",
@@ -46,13 +47,9 @@ const MODES: Mode[] = [
 export default function CompetitiveMenu() {
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-16 select-none antialiased">
-      <Link
-        href="/"
-        aria-label="Back to home"
-        className="absolute top-6 left-6 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-      >
-        ← menu
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
+        <Link href="/" aria-label="Back to home">← menu</Link>
+      </ZpButton>
 
       <div className="text-center mb-12 sm:mb-14">
         <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 mb-3">

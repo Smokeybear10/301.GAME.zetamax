@@ -46,11 +46,16 @@ export type EloOpponentBreakdown = {
 };
 
 export type EloUpdate = {
+  /** Total per-round delta = race_delta + baseline_delta. */
   rating_delta: number;
   new_rating: number;
   opponent_count: number;
   is_provisional: boolean;
   breakdown: EloOpponentBreakdown[];
+  /** Always-on score-vs-expected swing. Fires on every valid round. */
+  baseline_delta: number;
+  /** Expected score given the runner's pre-round rating (35 at 1200, +4 per 100 ELO). */
+  expected_score: number;
 };
 
 export type FinishRunResponse = {

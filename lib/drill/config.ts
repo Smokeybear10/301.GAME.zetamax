@@ -1,4 +1,5 @@
 import type { Op } from "./types";
+import type { TagKey } from "./derive-tags";
 
 /**
  * Per-operation configuration. Two operand ranges + an enabled flag.
@@ -25,8 +26,24 @@ export type OpRange = {
   bMax: number;
 };
 
+/**
+ * Optional tag-targeted sampling. When set, the generator rejection-samples
+ * from `generateProblem` until it finds a problem whose `deriveTags(...).attribution`
+ * matches one of the targeted tags. The deterministic invariant is preserved:
+ * same `(seedHash, index, config-with-targeting)` → same problem.
+ *
+ * Used by Learn mode. Classic mode leaves this undefined.
+ */
+export type TargetingConfig = {
+  /** Tag keys to target. Each problem index picks one uniformly at random. */
+  tags: TagKey[];
+  /** Cap on rejection-sampling tries per problem. Defaults to 50. */
+  maxCandidates?: number;
+};
+
 export type GeneratorConfig = {
   ops: Record<Op, OpRange>;
+  targeting?: TargetingConfig;
 };
 
 export const ZETAMAC_DEFAULTS: GeneratorConfig = {
@@ -44,6 +61,12 @@ export const DURATION_PRESETS_MS = [
 ] as const;
 
 export const DEFAULT_DURATION_MS = 120_000;
+
+/** Daily mode: hard time cap (5 min). Round ends at this OR target count, whichever first. */
+export const DAILY_DURATION_MS = 300_000;
+
+/** Daily mode: number of correct answers required to complete a round. */
+export const DAILY_TARGET_COUNT = 50;
 
 /**
  * Key bindings for the three control actions during a round. Defaults match
@@ -146,6 +169,7 @@ function clampInt(v: unknown, fallback: number, lo: number, hi: number): number 
 
 /** True iff the generator config matches Zetamac defaults exactly. */
 export function isZetamacDefaults(gen: GeneratorConfig): boolean {
+  if (gen.targeting) return false;
   for (const op of ["add", "sub", "mul", "div"] as const) {
     const a = gen.ops[op];
     const b = ZETAMAC_DEFAULTS.ops[op];

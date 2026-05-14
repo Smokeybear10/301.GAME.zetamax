@@ -40,6 +40,9 @@ export function createDrill(config: DrillConfig): Drill {
   const generatorConfig = config.generatorConfig ?? ZETAMAC_DEFAULTS;
   const maxDigits = maxAnswerDigits(generatorConfig);
   const keybinds = config.keybinds ?? KEYBIND_DEFAULTS;
+  const terminationMode = config.terminationMode ?? "time";
+  const targetCount = config.targetCount ?? Infinity;
+  const disableSkip = config.disableSkip ?? false;
 
   const subs = new Set<(state: DrillState) => void>();
 
@@ -102,6 +105,11 @@ export function createDrill(config: DrillConfig): Drill {
     };
     internal.events.push(event);
     if (correct) internal.score++;
+    // Count-mode terminator: end the round as soon as the target is hit.
+    if (terminationMode === "count" && internal.score >= targetCount) {
+      endInternal();
+      return;
+    }
     loadProblem(internal.currentProblemIndex + 1);
   }
 
@@ -167,15 +175,24 @@ export function createDrill(config: DrillConfig): Drill {
       }
 
       if (key === keybinds.submit) {
-        internal.currentKeystrokes.push({ key, t });
         const correct =
           internal.typedAnswer === String(internal.currentProblem!.answer);
+        // disableSkip: Enter on a wrong answer is ignored. Auto-commit on
+        // correct typing already advances; this just blocks the "give up"
+        // shortcut so the user must finish the current problem.
+        if (disableSkip && !correct) {
+          return;
+        }
+        internal.currentKeystrokes.push({ key, t });
         commit(correct);
         notify();
         return;
       }
 
       if (key === keybinds.skip) {
+        if (disableSkip) {
+          return;
+        }
         internal.currentKeystrokes.push({ key, t });
         commit(false);
         notify();

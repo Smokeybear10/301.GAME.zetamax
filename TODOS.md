@@ -36,14 +36,6 @@ These were in the CEO-review MVP but moved out after the eng review snap-back to
 - **Effort:** M (~half day CC). Per-mode ranking tables.
 - **Depends on:** v1 launch and observed retention.
 
-### Sprint mode (30s timed variant)
-- **What:** Same engine, 30-second clock, denser problem cadence.
-- **Effort:** S.
-
-### Survival mode (3 lives, untimed)
-- **What:** No clock. Wrong answer or `>2.5s` answer (config-tunable) costs a life.
-- **Effort:** S.
-
 ### Daily Challenge mode
 - **What:** Deterministic seed shared by all friends today (24-hour window). Same exact problem set for the whole friend group; leaderboard sorts on this set.
 - **Why:** Strongest social hook on the modes list. "Did you do today's daily?" becomes the group chat ritual. Wordle-style social pull without Wordle's once-per-day gate — you can still drill freely outside the daily.

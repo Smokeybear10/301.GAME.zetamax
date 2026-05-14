@@ -3,6 +3,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { precomputeAnswerKey } from "@/lib/drill/precompute";
 import { dailySeedFor, isValidDailyDate } from "@/lib/drill/daily-seed";
+import { DAILY_DURATION_MS } from "@/lib/drill/config";
 import type { StartRunRequest, StartRunResponse } from "@/lib/runs-api";
 
 const ACTIVE_RUN_RATE_LIMIT_MS = 125_000;
@@ -105,6 +106,9 @@ async function handleRankedStart(
   return NextResponse.json(responseBody);
 }
 
+// Daily runs are count-terminated (50 problems) with DAILY_DURATION_MS as the
+// hard cap. The client uses duration_ms as the engine cap and the validator
+// uses it as the staleness ceiling.
 async function handleDailyStart(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -122,17 +126,25 @@ async function handleDailyStart(
     .maybeSingle();
 
   if (existing) {
-    let existingStatus = existing.validation_status as string;
+    const existingStatus = existing.validation_status as string;
+    // Pending rows: the user previously visited this day's page (which mounts
+    // and creates the row) but hasn't finalized a run. Resume — don't punish
+    // a revisit. We reset started_at so the wallclock check at finish time
+    // measures from now, not whenever the page was last opened. The pagehide
+    // beacon is what marks a genuine mid-play bail as 'forfeited'.
     if (existingStatus === "pending") {
-      const { error: updateError } = await admin
+      await admin
         .from("runs")
-        .update({
-          validation_status: "forfeited",
-          completed_at: new Date().toISOString(),
-        })
+        .update({ started_at: new Date().toISOString() })
         .eq("id", existing.id)
         .eq("validation_status", "pending");
-      if (!updateError) existingStatus = "forfeited";
+      const responseBody: StartRunResponse = {
+        run_id: existing.id,
+        seed: dailySeedFor(dailyDate),
+        duration_ms: DAILY_DURATION_MS,
+        resumed: true,
+      };
+      return NextResponse.json(responseBody);
     }
     return NextResponse.json(
       { error: "already_attempted", existing_status: existingStatus },
@@ -175,7 +187,7 @@ async function handleDailyStart(
   const responseBody: StartRunResponse = {
     run_id: inserted.id,
     seed,
-    duration_ms: DEFAULT_DURATION_MS,
+    duration_ms: DAILY_DURATION_MS,
     resumed: false,
   };
   return NextResponse.json(responseBody);

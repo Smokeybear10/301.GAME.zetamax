@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZpButton } from "@/components/ui/zp-button";
 
 export function InvalidDateScreen({ badDate }: { badDate: string }) {
   return (
@@ -14,12 +15,9 @@ export function InvalidDateScreen({ badDate }: { badDate: string }) {
           You can play today&apos;s puzzle plus catch up on the past 30 days.
           {badDate ? <span className="block font-mono text-[11px] mt-2 text-white/42">requested: {badDate}</span> : null}
         </p>
-        <Link
-          href="/competitive/daily"
-          className="inline-block px-6 py-2 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-xs tracking-[0.18em] uppercase"
-        >
-          back to daily
-        </Link>
+        <ZpButton asChild variant="chip">
+          <Link href="/competitive/daily">back to daily</Link>
+        </ZpButton>
       </div>
     </main>
   );

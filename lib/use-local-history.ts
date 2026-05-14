@@ -7,43 +7,50 @@ import {
   rollupRoundResult,
   type ByOpStats,
   type MulFactsStats,
-  type PracticeMode,
   type RunRow,
+  type SaveMode,
 } from "@/lib/practice-stats";
+import { emptyTagStats, type TagStats } from "@/lib/drill/round-analytics";
 
-const VALID_MODES: ReadonlySet<PracticeMode> = new Set([
+const VALID_MODES: ReadonlySet<SaveMode> = new Set([
   "classic",
   "quant",
   "compound",
-  "weakness",
+  "learn",
+  "ranked",
+  "daily",
 ]);
 
-function coerceMode(raw: unknown): PracticeMode {
-  return typeof raw === "string" && VALID_MODES.has(raw as PracticeMode)
-    ? (raw as PracticeMode)
+function coerceMode(raw: unknown): SaveMode {
+  return typeof raw === "string" && VALID_MODES.has(raw as SaveMode)
+    ? (raw as SaveMode)
     : "classic";
 }
 
 /**
- * Practice-mode round history, stored in localStorage.
+ * Round-history store. v3 schema captures per-op stats, mul-fact map, AND
+ * per-tag stats (skill + pattern attribution per problem). Aggregating the
+ * weak-pattern diagnostic across rows is then trivial — every triple is
+ * additive.
  *
- * v2 schema captures per-op stats and the canonicalized 2..12 mul-fact map
- * per run, computed at save time. Cross-run aggregation is then trivial
- * (additive over {n, correct, sumLatencyMs} triples). The v1 schema (just
- * score/accuracy/latency aggregates) is migrated forward on first read.
+ * Migration history:
+ *   v1 → v2: dropped key, schema bumped to per-op + mul-facts.
+ *   v2 → v3: dropped key, schema bumped to add byTag + tagVersion. Legacy v2
+ *           rows migrate forward with byTag={} and tagVersion=0 (invisible
+ *           to the diagnostic, still queryable for op/mul-fact stats).
  *
- * Cap of 1000 stored runs is well under localStorage's ~5MB practical
- * budget (~1KB/run), and well over what a single user will ever drill in
- * a v1 lifetime. Older runs are pruned silently.
+ * Cap: 1000 stored runs (~1KB/run = 1MB, well under the 5MB localStorage
+ * budget). Older runs are pruned silently.
  */
 
 const STORAGE_KEY_V1 = "zetamax:practice-history";
-const STORAGE_KEY = "zetamax:practice-history-v2";
+const STORAGE_KEY_V2 = "zetamax:practice-history-v2";
+const STORAGE_KEY = "zetamax:practice-history-v3";
 const MAX_STORED = 1000;
+const DEFAULT_DURATION_MS = 120_000;
 
 export type StoredRun = RunRow;
 
-/** Backward-compat type used by callers that pre-date v2 (kept for clarity). */
 export type LocalStats = {
   todayBest: number;
   lifetimeBest: number;
@@ -72,51 +79,121 @@ function isV1Run(x: unknown): x is V1Run {
   );
 }
 
-function v1ToV2(r: V1Run): StoredRun {
+function v1ToV3(r: V1Run): StoredRun {
   return {
-    v: 2,
-    mode: "classic", // v1 only had one mode
+    v: 3,
+    mode: "classic",
     score: r.score,
     problemsAttempted: r.problemsAttempted,
-    // v1 didn't track problemsCorrect; score == correct in practice mode.
     problemsCorrect: r.score,
     meanLatencyMs: r.meanLatencyMs,
-    durationMs: 120_000, // unknown — assume Zetamac default
+    durationMs: DEFAULT_DURATION_MS,
     endedAt: r.endedAt,
     byOp: emptyByOp(),
     mulFacts: {},
+    byTag: {},
+    tagVersion: 0,
   };
 }
 
 /**
- * One-shot v1 → v2 migration. Idempotent: if v2 already has rows, the v1 key
- * is dropped without re-importing (assume migration already ran in a prior
- * session). Failures are silent — leaving both keys alone is safer than
- * tearing down user data on a transient parse error.
+ * v2 row shape — unversioned migration source. Rows look like a v3 row
+ * minus byTag and tagVersion. v: 2 marker.
  */
-function migrateV1IfNeeded(): void {
+type V2RowShape = {
+  v: 2;
+  mode?: SaveMode;
+  score: number;
+  problemsAttempted?: number;
+  problemsCorrect?: number;
+  meanLatencyMs?: number;
+  durationMs?: number;
+  endedAt: number;
+  byOp?: ByOpStats;
+  mulFacts?: MulFactsStats;
+};
+
+function isV2RowShape(x: unknown): x is V2RowShape {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    o.v === 2 &&
+    typeof o.score === "number" &&
+    typeof o.endedAt === "number"
+  );
+}
+
+function v2ToV3(r: V2RowShape): StoredRun {
+  return {
+    v: 3,
+    mode: coerceMode(r.mode),
+    score: r.score,
+    problemsAttempted: r.problemsAttempted ?? 0,
+    problemsCorrect: r.problemsCorrect ?? r.score,
+    meanLatencyMs: r.meanLatencyMs ?? 0,
+    durationMs: r.durationMs ?? DEFAULT_DURATION_MS,
+    endedAt: r.endedAt,
+    byOp: {
+      add: r.byOp?.add ?? emptyTriple(),
+      sub: r.byOp?.sub ?? emptyTriple(),
+      mul: r.byOp?.mul ?? emptyTriple(),
+      div: r.byOp?.div ?? emptyTriple(),
+    },
+    mulFacts: r.mulFacts ?? {},
+    byTag: {},
+    tagVersion: 0,
+  };
+}
+
+/**
+ * One-shot migration. Idempotent — if the v3 key already exists, older keys
+ * are dropped without re-importing. Failures are silent (don't kill user
+ * data on a transient parse error).
+ */
+function migrateIfNeeded(): void {
   if (typeof window === "undefined") return;
   try {
-    const v1Raw = window.localStorage.getItem(STORAGE_KEY_V1);
-    if (!v1Raw) return;
+    const v3Raw = window.localStorage.getItem(STORAGE_KEY);
+    if (v3Raw) {
+      // Already on v3. Drop legacy keys if they're hanging around.
+      window.localStorage.removeItem(STORAGE_KEY_V1);
+      window.localStorage.removeItem(STORAGE_KEY_V2);
+      return;
+    }
 
-    const v2Raw = window.localStorage.getItem(STORAGE_KEY);
+    // Prefer v2 → v3 if v2 has data.
+    const v2Raw = window.localStorage.getItem(STORAGE_KEY_V2);
     if (v2Raw) {
-      // Already migrated in a prior session.
+      try {
+        const parsed = JSON.parse(v2Raw);
+        if (Array.isArray(parsed)) {
+          const migrated = parsed.filter(isV2RowShape).map(v2ToV3);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        }
+      } catch {
+        // ignore — leave v2 alone, write nothing
+      }
+      window.localStorage.removeItem(STORAGE_KEY_V2);
       window.localStorage.removeItem(STORAGE_KEY_V1);
       return;
     }
 
-    const parsed = JSON.parse(v1Raw);
-    if (!Array.isArray(parsed)) {
+    // No v2 — fall back to v1 → v3.
+    const v1Raw = window.localStorage.getItem(STORAGE_KEY_V1);
+    if (v1Raw) {
+      try {
+        const parsed = JSON.parse(v1Raw);
+        if (Array.isArray(parsed)) {
+          const migrated = parsed.filter(isV1Run).map(v1ToV3);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        }
+      } catch {
+        // ignore
+      }
       window.localStorage.removeItem(STORAGE_KEY_V1);
-      return;
     }
-    const migrated: StoredRun[] = parsed.filter(isV1Run).map(v1ToV2);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-    window.localStorage.removeItem(STORAGE_KEY_V1);
   } catch {
-    // parse failure or QuotaExceeded — bail quietly, keep both keys.
+    // catastrophic — leave everything alone
   }
 }
 
@@ -124,11 +201,11 @@ function migrateV1IfNeeded(): void {
 // Read / write
 // ---------------------------------------------------------------------------
 
-function isStoredRun(x: unknown): x is StoredRun {
+function isV3StoredRun(x: unknown): x is StoredRun {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   return (
-    o.v === 2 &&
+    o.v === 3 &&
     typeof o.score === "number" &&
     typeof o.endedAt === "number" &&
     typeof o.byOp === "object" &&
@@ -136,32 +213,52 @@ function isStoredRun(x: unknown): x is StoredRun {
   );
 }
 
-/**
- * Normalize a row read off disk — fills in any missing v2 sub-fields with
- * zeroed defaults. Defensive against future schema bumps and against
- * partial writes from earlier dev builds.
- */
+function normalizeByTag(raw: unknown): Record<string, TagStats> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, TagStats> = {};
+  for (const [tag, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== "object") continue;
+    const v = val as Partial<TagStats>;
+    const errors = (v.errors ?? {}) as Partial<TagStats["errors"]>;
+    out[tag] = {
+      n: typeof v.n === "number" ? v.n : 0,
+      correct: typeof v.correct === "number" ? v.correct : 0,
+      sum_log_lat: typeof v.sum_log_lat === "number" ? v.sum_log_lat : 0,
+      sum_log_lat_sq: typeof v.sum_log_lat_sq === "number" ? v.sum_log_lat_sq : 0,
+      sum_ttf_ms: typeof v.sum_ttf_ms === "number" ? v.sum_ttf_ms : 0,
+      sum_exec_ms: typeof v.sum_exec_ms === "number" ? v.sum_exec_ms : 0,
+      errors: {
+        off_by_one: typeof errors.off_by_one === "number" ? errors.off_by_one : 0,
+        off_by_ten: typeof errors.off_by_ten === "number" ? errors.off_by_ten : 0,
+        transposition: typeof errors.transposition === "number" ? errors.transposition : 0,
+        other: typeof errors.other === "number" ? errors.other : 0,
+      },
+    };
+  }
+  return out;
+}
+
 function normalizeRun(raw: unknown): StoredRun | null {
-  if (!isStoredRun(raw)) return null;
+  if (!isV3StoredRun(raw)) return null;
   const o = raw as Partial<StoredRun> & StoredRun;
-  const byOp: ByOpStats = {
-    add: o.byOp?.add ?? emptyTriple(),
-    sub: o.byOp?.sub ?? emptyTriple(),
-    mul: o.byOp?.mul ?? emptyTriple(),
-    div: o.byOp?.div ?? emptyTriple(),
-  };
-  const mulFacts: MulFactsStats = o.mulFacts ?? {};
   return {
-    v: 2,
+    v: 3,
     mode: coerceMode(o.mode),
     score: o.score,
     problemsAttempted: o.problemsAttempted ?? 0,
     problemsCorrect: o.problemsCorrect ?? o.score,
     meanLatencyMs: o.meanLatencyMs ?? 0,
-    durationMs: o.durationMs ?? 120_000,
+    durationMs: o.durationMs ?? DEFAULT_DURATION_MS,
     endedAt: o.endedAt,
-    byOp,
-    mulFacts,
+    byOp: {
+      add: o.byOp?.add ?? emptyTriple(),
+      sub: o.byOp?.sub ?? emptyTriple(),
+      mul: o.byOp?.mul ?? emptyTriple(),
+      div: o.byOp?.div ?? emptyTriple(),
+    },
+    mulFacts: o.mulFacts ?? {},
+    byTag: normalizeByTag(o.byTag),
+    tagVersion: typeof o.tagVersion === "number" ? o.tagVersion : 0,
   };
 }
 
@@ -190,48 +287,52 @@ function writeHistory(history: StoredRun[]): void {
   }
 }
 
-/** Read the full v2 history. Triggers v1 → v2 migration on first call. */
+/** Read the full v3 history. Triggers v1/v2 → v3 migration on first call. */
 export function getHistory(): StoredRun[] {
-  migrateV1IfNeeded();
+  migrateIfNeeded();
   return readHistoryRaw();
 }
 
 /**
- * Persist a single round. Computes the per-op + mul-fact rollup at save time
- * (cheap — re-derives ~80 problems from the seed). Returns the stored row.
+ * Persist a single round. Computes the per-op + mul-fact + per-tag rollup
+ * at save time (cheap — re-derives ~80 problems from the seed).
  *
- * v2 (deferred per TODOS.md): also call deriveTags(a, b, op) here and
- * persist a patternTags rollup on the row.
+ * `durationMs` should be the round's actual duration so the late-round
+ * fatigue filter inside the tag rollup uses the right cutoff.
  */
 export function saveRun(
-  mode: PracticeMode,
+  mode: SaveMode,
   seed: string,
   generatorConfig: GeneratorConfig,
   result: RoundResult,
+  durationMs: number,
 ): StoredRun {
-  const rollup = rollupRoundResult(seed, generatorConfig, result);
+  const rollup = rollupRoundResult(seed, generatorConfig, result, durationMs);
   const stored: StoredRun = {
-    v: 2,
+    v: 3,
     mode,
     score: result.score,
     problemsAttempted: result.problemsAttempted,
     problemsCorrect: rollup.problemsCorrect,
     meanLatencyMs: result.meanLatencyMs,
-    durationMs: 120_000,
+    durationMs,
     endedAt: Date.now(),
     byOp: rollup.byOp,
     mulFacts: rollup.mulFacts,
+    byTag: rollup.byTag,
+    tagVersion: rollup.tagVersion,
   };
   const next = [...getHistory(), stored];
   writeHistory(next);
   return stored;
 }
 
-/** Wipe the v2 history. Used by the "Reset all stats" affordance. */
+/** Wipe stored history (all schema versions). */
 export function clearHistory(): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY_V2);
     window.localStorage.removeItem(STORAGE_KEY_V1);
   } catch {
     // unreachable in practice; removeItem can't QuotaExceed.
@@ -260,3 +361,7 @@ export function getStats(): LocalStats {
   const lifetimeBest = history.reduce((max, r) => Math.max(max, r.score), 0);
   return { todayBest, lifetimeBest, totalRuns: history.length };
 }
+
+// `emptyTagStats` re-exported for any future caller that needs it without
+// importing from drill/.
+export { emptyTagStats };

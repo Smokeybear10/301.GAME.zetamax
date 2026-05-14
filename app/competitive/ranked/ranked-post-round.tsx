@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { RoundResult } from "@/lib/drill";
+import { ZETAMAC_DEFAULTS, type RoundResult } from "@/lib/drill";
 import { finishRun, type FinishRunResponse } from "@/lib/runs-api";
+import { saveRun } from "@/lib/use-local-history";
+import { TodaysFocus } from "@/app/me/todays-focus";
+import { ZpButton } from "@/components/ui/zp-button";
 import { LeaderboardPanel } from "./leaderboard-panel";
 
 type Submission =
@@ -14,6 +17,8 @@ type Submission =
 
 type Props = {
   runId: string;
+  seed: string;
+  durationMs: number;
   result: RoundResult;
   startedAtMs: number;
   onPlayAgain: () => void;
@@ -21,6 +26,8 @@ type Props = {
 
 export function RankedPostRound({
   runId,
+  seed,
+  durationMs,
   result,
   startedAtMs,
   onPlayAgain,
@@ -42,6 +49,15 @@ export function RankedPostRound({
       .then((response) => {
         if (cancelled) return;
         setSub({ phase: "ok", response });
+        // Mirror the round to localStorage so the cross-mode diagnostic on
+        // /me can aggregate ranked rounds. Only on validated saves.
+        if (response.validation_status === "ok" && !response.cached) {
+          try {
+            saveRun("ranked", seed, ZETAMAC_DEFAULTS, result, durationMs);
+          } catch {
+            // best-effort — local stats are nice-to-have, not load-bearing
+          }
+        }
       })
       .catch((e) => {
         if (cancelled) return;
@@ -51,7 +67,7 @@ export function RankedPostRound({
     return () => {
       cancelled = true;
     };
-  }, [runId, result, startedAtMs]);
+  }, [runId, seed, durationMs, result, startedAtMs]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -86,6 +102,7 @@ export function RankedPostRound({
 
       {sub.phase === "ok" && (
         <SuccessPanel
+          runId={runId}
           response={sub.response}
           result={result}
           onPlayAgain={onPlayAgain}
@@ -144,10 +161,12 @@ function ErrorPanel({
 }
 
 function SuccessPanel({
+  runId,
   response,
   result,
   onPlayAgain,
 }: {
+  runId: string;
   response: FinishRunResponse;
   result: RoundResult;
   onPlayAgain: () => void;
@@ -177,7 +196,16 @@ function SuccessPanel({
         <LeaderboardPanel />
       </div>
 
+      <TodaysFocus />
+
       <Buttons onPlayAgain={onPlayAgain} />
+
+      <Link
+        href={`/r/${runId}`}
+        className="mt-4 font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-white/65 transition-colors zp-fade zp-fade-5"
+      >
+        replay this round →
+      </Link>
     </>
   );
 }
@@ -192,20 +220,9 @@ function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
         ? "text-white/65"
         : "text-white/42";
 
-  if (elo.opponent_count === 0) {
-    return (
-      <div className="mb-10 zp-fade zp-fade-3 text-center">
-        <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42">
-          no rated opponents today · {elo.new_rating} elo
-          {elo.is_provisional ? " · 🧪 provisional" : ""}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-md mb-10 zp-fade zp-fade-3">
-      <div className="flex items-baseline justify-center gap-3 mb-3">
+      <div className="flex items-baseline justify-center gap-3 mb-3 flex-wrap">
         <span className={`font-mono tabular-nums text-2xl ${tone}`}>
           {sign}
           {Math.abs(elo.rating_delta)} ELO
@@ -218,7 +235,7 @@ function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
             title="Provisional — first 30 rated rounds"
             className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42"
           >
-            🧪
+            provisional
           </span>
         )}
       </div>
@@ -248,8 +265,43 @@ function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
             </li>
           );
         })}
+        <BaselineRow
+          baseline={elo.baseline_delta}
+          expected={elo.expected_score}
+        />
       </ul>
     </div>
+  );
+}
+
+function BaselineRow({
+  baseline,
+  expected,
+}: {
+  baseline: number;
+  expected: number;
+}) {
+  const sign = baseline > 0 ? "+" : baseline < 0 ? "" : "±";
+  const tone =
+    baseline > 0
+      ? "text-white"
+      : baseline < 0
+        ? "text-white/65"
+        : "text-white/42";
+  return (
+    <li
+      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 font-mono text-[11px]"
+      title="Baseline ELO swing — score vs. expected for your rating"
+    >
+      <span className="text-white/65 truncate">baseline</span>
+      <span className={`tabular-nums ${tone} w-12 text-right`}>
+        {sign}
+        {Math.abs(baseline)}
+      </span>
+      <span className="tabular-nums text-white/42 w-20 text-right">
+        vs {expected}
+      </span>
+    </li>
   );
 }
 
@@ -257,19 +309,12 @@ function Buttons({ onPlayAgain }: { onPlayAgain: () => void }) {
   return (
     <>
       <div className="flex gap-3 zp-fade zp-fade-5">
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-        >
+        <ZpButton variant="primary" onClick={onPlayAgain}>
           Drill again
-        </button>
-        <Link
-          href="/competitive"
-          className="px-7 py-3 border border-white/10 text-white/65 hover:text-white hover:border-white text-sm transition-colors flex items-center"
-        >
-          Modes
-        </Link>
+        </ZpButton>
+        <ZpButton asChild variant="secondary">
+          <Link href="/competitive">Modes</Link>
+        </ZpButton>
       </div>
       <p className="font-mono text-[10px] tracking-[0.18em] text-white/30 mt-6 zp-fade zp-fade-5">
         or press Enter

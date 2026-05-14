@@ -2,9 +2,29 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { RoundResult } from "@/lib/drill";
+import { DAILY_TARGET_COUNT, ZETAMAC_DEFAULTS, type RoundResult } from "@/lib/drill";
 import { finishRun, type FinishRunResponse } from "@/lib/runs-api";
+import { saveRun } from "@/lib/use-local-history";
+import { TodaysFocus } from "@/app/me/todays-focus";
+import { ZpButton } from "@/components/ui/zp-button";
 import { DailyLeaderboardPanel } from "../daily-leaderboard-panel";
+
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/**
+ * Elapsed time from event log: time of the last event's submittedAt (round-
+ * relative ms). For a completed daily, that's when the 50th correct answer
+ * committed. Empty events → 0.
+ */
+function elapsedFromEvents(result: RoundResult): number {
+  if (result.events.length === 0) return 0;
+  return result.events[result.events.length - 1].submittedAt;
+}
 
 type Submission =
   | { phase: "submitting" }
@@ -15,11 +35,20 @@ type Submission =
 type Props = {
   date: string;
   runId: string;
+  seed: string;
+  durationMs: number;
   result: RoundResult;
   startedAtMs: number;
 };
 
-export function DailyPostRound({ date, runId, result, startedAtMs }: Props) {
+export function DailyPostRound({
+  date,
+  runId,
+  seed,
+  durationMs,
+  result,
+  startedAtMs,
+}: Props) {
   const [sub, setSub] = useState<Submission>({ phase: "submitting" });
 
   useEffect(() => {
@@ -37,6 +66,13 @@ export function DailyPostRound({ date, runId, result, startedAtMs }: Props) {
       .then((response) => {
         if (cancelled) return;
         setSub({ phase: "ok", response });
+        if (response.validation_status === "ok" && !response.cached) {
+          try {
+            saveRun("daily", seed, ZETAMAC_DEFAULTS, result, durationMs);
+          } catch {
+            // best-effort
+          }
+        }
       })
       .catch((e) => {
         if (cancelled) return;
@@ -46,7 +82,7 @@ export function DailyPostRound({ date, runId, result, startedAtMs }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [runId, result, startedAtMs]);
+  }, [runId, seed, durationMs, result, startedAtMs]);
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-start sm:justify-center px-6 py-12 sm:py-16 z-10 antialiased overflow-y-auto">
@@ -65,7 +101,7 @@ export function DailyPostRound({ date, runId, result, startedAtMs }: Props) {
       {sub.phase === "error" && <ErrorPanel code={sub.code} />}
 
       {sub.phase === "ok" && (
-        <SuccessPanel response={sub.response} result={result} />
+        <SuccessPanel runId={runId} response={sub.response} result={result} />
       )}
     </div>
   );
@@ -91,6 +127,9 @@ function ErrorPanel({ code }: { code: string }) {
     case "rejected_wallclock":
       copy = "The round didn't pass timing checks. Counts as a forfeit.";
       break;
+    case "rejected_incomplete":
+      copy = `Couldn't finish all ${DAILY_TARGET_COUNT} in time. No retry today.`;
+      break;
     case "rejected_latency":
     case "rejected_streak":
     case "rejected_score_mismatch":
@@ -115,25 +154,27 @@ function ErrorPanel({ code }: { code: string }) {
 }
 
 function SuccessPanel({
+  runId,
   response,
   result,
 }: {
+  runId: string;
   response: FinishRunResponse;
   result: RoundResult;
 }) {
   const validated = response.validation_status === "ok";
+  const elapsedMs = elapsedFromEvents(result);
   return (
     <>
-      <div className="font-black tracking-[-0.06em] leading-[0.85] text-[clamp(120px,22vw,320px)] mb-8 zp-fade zp-fade-2">
-        {response.score}
+      <div className="font-black tracking-[-0.06em] leading-[0.85] text-[clamp(120px,22vw,320px)] mb-8 tabular-nums zp-fade zp-fade-2">
+        {formatTime(elapsedMs)}
       </div>
       <p className="font-mono text-[12px] tabular-nums text-white/65 mb-1 zp-fade zp-fade-3">
-        {validated ? "Saved." : `Status: ${response.validation_status}`}
+        {validated ? `${DAILY_TARGET_COUNT} of ${DAILY_TARGET_COUNT} done.` : `Status: ${response.validation_status}`}
         {response.cached ? " (already saved)" : ""}
       </p>
       <p className="font-mono text-[11px] text-white/42 mb-10 zp-fade zp-fade-3">
-        {Math.round(result.accuracy * 100)}% accuracy ·{" "}
-        {Math.round(result.meanLatencyMs)}ms mean
+        {Math.round(result.meanLatencyMs)}ms per problem
       </p>
 
       <div className="w-full max-w-md mb-10 zp-fade zp-fade-4">
@@ -143,7 +184,16 @@ function SuccessPanel({
         <DailyLeaderboardPanel />
       </div>
 
+      <TodaysFocus />
+
       <BackLink />
+
+      <Link
+        href={`/r/${runId}`}
+        className="mt-4 font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-white/65 transition-colors zp-fade zp-fade-5"
+      >
+        replay this round →
+      </Link>
     </>
   );
 }
@@ -151,18 +201,12 @@ function SuccessPanel({
 function BackLink() {
   return (
     <div className="flex gap-3 zp-fade zp-fade-5">
-      <Link
-        href="/competitive/daily"
-        className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors"
-      >
-        Back to daily
-      </Link>
-      <Link
-        href="/competitive"
-        className="px-7 py-3 border border-white/10 text-white/65 hover:text-white hover:border-white text-sm transition-colors flex items-center"
-      >
-        Modes
-      </Link>
+      <ZpButton asChild variant="primary">
+        <Link href="/competitive/daily">Back to daily</Link>
+      </ZpButton>
+      <ZpButton asChild variant="secondary">
+        <Link href="/competitive">Modes</Link>
+      </ZpButton>
     </div>
   );
 }

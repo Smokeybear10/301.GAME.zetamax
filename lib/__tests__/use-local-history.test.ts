@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { ZETAMAC_DEFAULTS, generateProblem, hashString, type RoundResult } from "@/lib/drill";
+import {
+  ZETAMAC_DEFAULTS,
+  generateProblem,
+  hashString,
+  type RoundResult,
+} from "@/lib/drill";
+import { TAG_VERSION } from "@/lib/drill/derive-tags";
 import {
   clearHistory,
   getHistory,
@@ -8,7 +14,8 @@ import {
 } from "@/lib/use-local-history";
 
 const STORAGE_KEY_V1 = "zetamax:practice-history";
-const STORAGE_KEY = "zetamax:practice-history-v2";
+const STORAGE_KEY_V2 = "zetamax:practice-history-v2";
+const STORAGE_KEY = "zetamax:practice-history-v3";
 
 class FakeStorage {
   store = new Map<string, string>();
@@ -45,17 +52,23 @@ afterEach(() => {
   delete globalThis.window;
 });
 
-// Build a synthetic RoundResult with N correct events, all using the same
-// seed so problem indices map to real Zetamac problems.
+const DURATION_MS = 120_000;
+
+// Build a synthetic RoundResult with N correct events. Real keystrokes
+// included so the tag rollup has something to chew on (TTF, log-latency).
 function makeResult(seed: string, n: number, opts: { score?: number } = {}): RoundResult {
   const seedHash = hashString(seed);
   const events = Array.from({ length: n }, (_, i) => {
     const p = generateProblem(seedHash, i, ZETAMAC_DEFAULTS);
+    const submittedAt = (i + 1) * 1500;
     return {
       problemId: `p${i}`,
       typed: String(p.answer),
-      keystrokes: [],
-      submittedAt: i * 1500,
+      keystrokes: [
+        { key: "5", t: 600 },
+        { key: "Enter", t: 1450 },
+      ],
+      submittedAt,
       correct: true,
       latencyMs: 1500,
       corrections: 0,
@@ -88,26 +101,53 @@ describe("getHistory", () => {
 });
 
 describe("saveRun", () => {
-  it("round-trips a run through storage and computes byOp/mulFacts", () => {
+  it("round-trips a v3 run with byTag and tagVersion", () => {
     const result = makeResult("rt-1", 20);
-    const saved = saveRun("classic", "rt-1", ZETAMAC_DEFAULTS, result);
-    expect(saved.v).toBe(2);
+    const saved = saveRun("classic", "rt-1", ZETAMAC_DEFAULTS, result, DURATION_MS);
+    expect(saved.v).toBe(3);
     expect(saved.mode).toBe("classic");
     expect(saved.score).toBe(20);
     expect(saved.problemsCorrect).toBe(20);
+    expect(saved.tagVersion).toBe(TAG_VERSION);
     // byOp should sum to 20 across all 4 ops.
-    const total = Object.values(saved.byOp).reduce((s, t) => s + t.n, 0);
-    expect(total).toBe(20);
+    const byOpTotal = Object.values(saved.byOp).reduce((s, t) => s + t.n, 0);
+    expect(byOpTotal).toBe(20);
+    // byTag total also 20 (single-attribution: each event hits one tag)
+    const byTagTotal = Object.values(saved.byTag).reduce((s, t) => s + t.n, 0);
+    expect(byTagTotal).toBe(20);
 
     const history = getHistory();
     expect(history).toHaveLength(1);
     expect(history[0]).toEqual(saved);
   });
 
+  it("accepts new modes (ranked, daily) for cross-mode aggregation", () => {
+    const ranked = saveRun(
+      "ranked",
+      "rk-1",
+      ZETAMAC_DEFAULTS,
+      makeResult("rk-1", 10),
+      DURATION_MS,
+    );
+    expect(ranked.mode).toBe("ranked");
+    const daily = saveRun(
+      "daily",
+      "d-1",
+      ZETAMAC_DEFAULTS,
+      makeResult("d-1", 8),
+      DURATION_MS,
+    );
+    expect(daily.mode).toBe("daily");
+    const history = getHistory();
+    const modes = history.map((r) => r.mode);
+    expect(modes.sort()).toEqual(["daily", "ranked"]);
+  });
+
   it("caps history at MAX_STORED rows", () => {
-    // Pre-fill with 1005 valid v2 rows.
+    // Pre-fill v3 storage directly with 1005 valid rows.
     const rows = Array.from({ length: 1005 }, (_, i) => ({
-      v: 2 as const,
+      v: 3 as const,
+      mode: "classic" as const,
       score: i,
       problemsAttempted: i,
       problemsCorrect: i,
@@ -121,13 +161,20 @@ describe("saveRun", () => {
         div: { n: 0, correct: 0, sumLatencyMs: 0 },
       },
       mulFacts: {},
+      byTag: {},
+      tagVersion: TAG_VERSION,
     }));
     storage.setItem(STORAGE_KEY, JSON.stringify(rows));
 
-    saveRun("classic", "cap-1", ZETAMAC_DEFAULTS, makeResult("cap-1", 5, { score: 5 }));
+    saveRun(
+      "classic",
+      "cap-1",
+      ZETAMAC_DEFAULTS,
+      makeResult("cap-1", 5, { score: 5 }),
+      DURATION_MS,
+    );
     const history = getHistory();
     expect(history.length).toBe(1000);
-    // Newest run survives — its score is 5 and it should be at the end.
     expect(history[history.length - 1].score).toBe(5);
   });
 
@@ -136,40 +183,41 @@ describe("saveRun", () => {
       throw new Error("QuotaExceededError");
     };
     expect(() =>
-      saveRun("classic", "q-1", ZETAMAC_DEFAULTS, makeResult("q-1", 3)),
+      saveRun("classic", "q-1", ZETAMAC_DEFAULTS, makeResult("q-1", 3), DURATION_MS),
     ).not.toThrow();
   });
 });
 
-describe("v1 → v2 migration", () => {
+describe("v1 → v3 migration", () => {
   const v1Rows = [
     { score: 30, problemsAttempted: 32, accuracy: 30 / 32, meanLatencyMs: 1100, endedAt: 100 },
     { score: 25, problemsAttempted: 27, accuracy: 25 / 27, meanLatencyMs: 1300, endedAt: 200 },
   ];
 
-  it("copies v1 rows into v2 with empty byOp/mulFacts and removes v1 key", () => {
+  it("copies v1 rows into v3 with empty byOp/mulFacts/byTag and removes v1 key", () => {
     storage.setItem(STORAGE_KEY_V1, JSON.stringify(v1Rows));
     const history = getHistory();
     expect(history).toHaveLength(2);
+    expect(history[0].v).toBe(3);
     expect(history[0].score).toBe(30);
-    expect(history[0].v).toBe(2);
-    // byOp was unknown — every triple should be zeroed.
+    expect(history[0].mode).toBe("classic");
     for (const op of ["add", "sub", "mul", "div"] as const) {
       expect(history[0].byOp[op]).toEqual({ n: 0, correct: 0, sumLatencyMs: 0 });
     }
     expect(history[0].mulFacts).toEqual({});
+    expect(history[0].byTag).toEqual({});
+    expect(history[0].tagVersion).toBe(0); // legacy → invisible to diagnostic
     expect(storage.getItem(STORAGE_KEY_V1)).toBeNull();
     expect(storage.getItem(STORAGE_KEY)).not.toBeNull();
   });
 
   it("is idempotent — calling getHistory again does not re-migrate", () => {
     storage.setItem(STORAGE_KEY_V1, JSON.stringify(v1Rows));
-    getHistory(); // first call migrates
-    // Re-add v1 rows AFTER v2 already has data — should be dropped on next read.
+    getHistory();
     storage.setItem(STORAGE_KEY_V1, JSON.stringify(v1Rows));
     const second = getHistory();
-    expect(second).toHaveLength(2); // v2 untouched
-    expect(storage.getItem(STORAGE_KEY_V1)).toBeNull(); // v1 dropped
+    expect(second).toHaveLength(2);
+    expect(storage.getItem(STORAGE_KEY_V1)).toBeNull();
   });
 
   it("filters invalid v1 rows during migration", () => {
@@ -185,24 +233,89 @@ describe("v1 → v2 migration", () => {
   });
 });
 
+describe("v2 → v3 migration", () => {
+  const v2Rows = [
+    {
+      v: 2,
+      mode: "classic",
+      score: 30,
+      problemsAttempted: 32,
+      problemsCorrect: 30,
+      meanLatencyMs: 1100,
+      durationMs: 120_000,
+      endedAt: 100,
+      byOp: {
+        add: { n: 4, correct: 4, sumLatencyMs: 4400 },
+        sub: { n: 4, correct: 4, sumLatencyMs: 4400 },
+        mul: { n: 4, correct: 4, sumLatencyMs: 4400 },
+        div: { n: 4, correct: 4, sumLatencyMs: 4400 },
+      },
+      mulFacts: { "7x8": { n: 2, correct: 2, sumLatencyMs: 2200 } },
+    },
+  ];
+
+  it("preserves byOp/mulFacts and adds empty byTag/tagVersion=0", () => {
+    storage.setItem(STORAGE_KEY_V2, JSON.stringify(v2Rows));
+    const history = getHistory();
+    expect(history).toHaveLength(1);
+    expect(history[0].v).toBe(3);
+    expect(history[0].mode).toBe("classic");
+    expect(history[0].byOp.add.n).toBe(4);
+    expect(history[0].mulFacts["7x8"]).toEqual({ n: 2, correct: 2, sumLatencyMs: 2200 });
+    expect(history[0].byTag).toEqual({});
+    expect(history[0].tagVersion).toBe(0);
+    expect(storage.getItem(STORAGE_KEY_V2)).toBeNull();
+  });
+
+  it("v3 wins when both v2 and v3 keys exist (v3 already migrated)", () => {
+    // Existing v3 row
+    const v3Row = {
+      v: 3 as const,
+      mode: "classic" as const,
+      score: 99,
+      problemsAttempted: 99,
+      problemsCorrect: 99,
+      meanLatencyMs: 1000,
+      durationMs: 120_000,
+      endedAt: 1,
+      byOp: {
+        add: { n: 0, correct: 0, sumLatencyMs: 0 },
+        sub: { n: 0, correct: 0, sumLatencyMs: 0 },
+        mul: { n: 0, correct: 0, sumLatencyMs: 0 },
+        div: { n: 0, correct: 0, sumLatencyMs: 0 },
+      },
+      mulFacts: {},
+      byTag: {},
+      tagVersion: TAG_VERSION,
+    };
+    storage.setItem(STORAGE_KEY, JSON.stringify([v3Row]));
+    storage.setItem(STORAGE_KEY_V2, JSON.stringify(v2Rows));
+    const history = getHistory();
+    expect(history).toHaveLength(1);
+    expect(history[0].score).toBe(99);
+    expect(storage.getItem(STORAGE_KEY_V2)).toBeNull();
+  });
+});
+
 describe("clearHistory", () => {
-  it("removes both v1 and v2 keys", () => {
+  it("removes v1, v2, and v3 keys", () => {
     storage.setItem(STORAGE_KEY, JSON.stringify([]));
+    storage.setItem(STORAGE_KEY_V2, JSON.stringify([]));
     storage.setItem(STORAGE_KEY_V1, JSON.stringify([]));
     clearHistory();
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    expect(storage.getItem(STORAGE_KEY_V2)).toBeNull();
     expect(storage.getItem(STORAGE_KEY_V1)).toBeNull();
   });
 });
 
 describe("getStats backward-compat", () => {
-  it("computes lifetimeBest from v2 rows", () => {
-    saveRun("classic", "s-1", ZETAMAC_DEFAULTS, makeResult("s-1", 10, { score: 10 }));
-    saveRun("classic", "s-2", ZETAMAC_DEFAULTS, makeResult("s-2", 20, { score: 20 }));
+  it("computes lifetimeBest from v3 rows", () => {
+    saveRun("classic", "s-1", ZETAMAC_DEFAULTS, makeResult("s-1", 10, { score: 10 }), DURATION_MS);
+    saveRun("classic", "s-2", ZETAMAC_DEFAULTS, makeResult("s-2", 20, { score: 20 }), DURATION_MS);
     const stats = getStats();
     expect(stats.lifetimeBest).toBe(20);
     expect(stats.totalRuns).toBe(2);
-    // todayBest also equals 20 since both runs were just saved.
     expect(stats.todayBest).toBe(20);
   });
 

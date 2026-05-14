@@ -49,18 +49,28 @@ export async function updateSession(request: NextRequest) {
 
   // Public routes that don't require auth.
   // - `/` is the landing menu
+  // - `/about` is the about page
   // - `/practice` is the local-only drill — no auth needed
   // - `/login`, `/auth/*` are the auth flow itself
   // - `/api/*` route handlers do their own auth check and return JSON 401s.
   //   Redirecting them to /auth/login would break client fetches.
-  // /competitive is INTENTIONALLY NOT in this list — it requires sign-in.
+  // - any `*/opengraph-image` or `*/twitter-image` route — these are fetched
+  //   by Discord/iMessage/Slack bots without auth.
+  // /competitive (and /me, /r) is INTENTIONALLY NOT in this list — they require sign-in.
+  const path = request.nextUrl.pathname;
+  const isOgRoute =
+    path.endsWith("/opengraph-image") ||
+    path.endsWith("/twitter-image") ||
+    /\/(opengraph-image|twitter-image)\.[a-z0-9]+$/.test(path);
   const isPublicRoute =
-    request.nextUrl.pathname === "/" ||
-    request.nextUrl.pathname.startsWith("/practice") ||
-    request.nextUrl.pathname.startsWith("/design") ||
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/auth") ||
-    request.nextUrl.pathname.startsWith("/api");
+    path === "/" ||
+    path === "/about" ||
+    path.startsWith("/practice") ||
+    path.startsWith("/design") ||
+    path.startsWith("/login") ||
+    path.startsWith("/auth") ||
+    path.startsWith("/api") ||
+    isOgRoute;
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();

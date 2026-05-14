@@ -12,7 +12,8 @@ export type ValidationStatus =
   | "rejected_score_mismatch"
   | "rejected_latency"
   | "rejected_wallclock"
-  | "rejected_streak";
+  | "rejected_streak"
+  | "rejected_incomplete";
 
 export type ValidationResult = {
   status: ValidationStatus;
@@ -31,8 +32,15 @@ export type ValidationInput = {
   startedAtMs: number;
   /** Server's now() at /api/runs/finish. */
   completedAtMs: number;
-  /** Round duration. Default 120_000. */
+  /** Round duration. Default 120_000. In count mode, this is the hard time cap. */
   durationMs?: number;
+  /**
+   * When set, the run is graded as a fixed-length challenge (Daily v2):
+   *   - "ok" requires correct === targetCount AND no skip events.
+   *   - Wallclock floor is dropped; the round ends as soon as targetCount is hit.
+   *   - Anything short is "rejected_incomplete".
+   */
+  targetCount?: number;
 };
 
 /**
@@ -40,34 +48,51 @@ export type ValidationInput = {
  * we recompute correctness against `answerKey`. The client's claimed score
  * is also ignored — the only score that matters is what we compute here.
  *
- * Sanity gates (in order):
- *   1. wall-clock window: `completedAt - startedAt` within `durationMs ± 2s`
+ * Time-mode (default) sanity gates:
+ *   1. wall-clock: completedAt - startedAt within `durationMs ± 2s` and below MAX_STALE
  *   2. score: count events whose `typed` matches `answerKey[problemIndex]`
  *   3. latency floor: median latency on multi-digit answers > 200ms
  *   4. streak: no run of >5 consecutive answers <100ms apart
+ *
+ * Count-mode (`targetCount` set, used by Daily v2):
+ *   - Wallclock LOWER bound dropped (rounds end as soon as target hit).
+ *   - Wallclock UPPER bound = MAX_STALE.
+ *   - Score must equal targetCount and no event may be a skip (`typed === ""`).
+ *   - Anything short → "rejected_incomplete".
+ *   - Latency + streak checks still apply.
  */
 export function validateRun(input: ValidationInput): ValidationResult {
   const durationMs = input.durationMs ?? DEFAULT_DURATION_MS;
   const wallClockMs = input.completedAtMs - input.startedAtMs;
   const events = input.events;
+  const isCountMode = input.targetCount !== undefined;
 
-  // 1. wall-clock: drill must have run AT LEAST durationMs - 2s (so a fast bot
-  // can't claim a full round). Idle time before first keystroke is fine — the
-  // user might pause to read or grab coffee. Cap at MAX_STALE_RUN_MS to reject
-  // submissions of long-abandoned runs.
-  if (
-    wallClockMs < durationMs - DURATION_TOLERANCE_MS ||
-    wallClockMs > MAX_STALE_RUN_MS
-  ) {
-    return failure("rejected_wallclock", events.length, wallClockMs);
+  // 1. wall-clock
+  if (isCountMode) {
+    // Count-mode: only the staleness ceiling matters. The round may end well
+    // before durationMs (target hit) or at durationMs (cap, forfeit).
+    if (wallClockMs > MAX_STALE_RUN_MS) {
+      return failure("rejected_wallclock", events.length, wallClockMs);
+    }
+  } else {
+    // Time-mode: drill must have run AT LEAST durationMs - 2s (anti-bot)
+    // and not exceed MAX_STALE_RUN_MS (anti-zombie-tab).
+    if (
+      wallClockMs < durationMs - DURATION_TOLERANCE_MS ||
+      wallClockMs > MAX_STALE_RUN_MS
+    ) {
+      return failure("rejected_wallclock", events.length, wallClockMs);
+    }
   }
 
-  // 2. recomputed score
+  // 2. recomputed score + skip detection
   let correct = 0;
+  let skipCount = 0;
   for (const event of events) {
     const idx = parseProblemIndex(event.problemId);
     if (idx < 0 || idx >= input.answerKey.length) continue;
     if (event.typed === String(input.answerKey[idx])) correct++;
+    if (event.typed === "") skipCount++;
   }
 
   // 3. latency floor (multi-digit answers only — single-digit can be <200ms legitimately)
@@ -97,6 +122,13 @@ export function validateRun(input: ValidationInput): ValidationResult {
       }
     } else {
       streak = 0;
+    }
+  }
+
+  // 5. count-mode completeness: must hit target AND no skips slipped through
+  if (isCountMode) {
+    if (skipCount > 0 || correct < input.targetCount!) {
+      return failure("rejected_incomplete", events.length, wallClockMs);
     }
   }
 

@@ -134,7 +134,7 @@ Practice mode never touches the backend. Everything below applies only to Compet
 
 ### Out of v1 scope (deferred to v2+ in TODOS.md)
 - 12×12 fact heatmap, weak-pattern diagnostics, replay scrubber, OG image embed, magic-link auth.
-- Sprint, Survival, Focus, Ranked, Interview modes.
+- Focus, Ranked, Interview modes.
 - Glicko-2 ratings, 4-week seasons, badges.
 - Voice mode.
 - Public profile pages, embeddable widgets, Discord bot.
@@ -545,6 +545,53 @@ The design must never ship with any of these:
 10. Cookie-cutter section rhythm (hero → 3 features → testimonials → pricing → CTA).
 
 If a design proposal triggers any of these, the answer is "no, redo it."
+
+## Buttons
+
+Three canonical variants. Source of truth: `components/ui/zp-button.tsx`. **Do not improvise inline class strings** — every button across the app must use `<ZpButton>`. The component supports `asChild` so a `<Link>` child renders as a styled anchor without nested elements.
+
+### `variant="primary"` — solid CTA
+
+The dominant action on a screen. **One per view** if at all possible. Sentence-case label.
+
+- Default: `px-7 py-3 text-sm` solid white on black, inverts on hover.
+- `size="sm"`: `px-4 py-2 text-xs` for inline form actions (settings modal Save, profile name editor Save).
+
+Examples: `Drill again`, `Continue with Google`, `Save`, `Create league`, `Join league`, `Drill ranked`, `Drill Classic`, `Start drilling`.
+
+### `variant="secondary"` — outlined sibling
+
+Sentence-case action that lives next to a primary CTA, or as a row of equal-weight nav buttons (e.g. /me's `Drill ranked / Daily / Your leagues`).
+
+- Default: `px-7 py-3 text-sm` outlined `border-white/15`, fades up on hover.
+- `size="sm"`: `px-4 py-2 text-xs` (settings modal Cancel, profile name editor Cancel).
+
+Examples: `Modes`, `Daily`, `Your leagues`, `Cancel`, `Back to daily`, `Restart` (replay).
+
+### `variant="chip"` — mono utility
+
+Small uppercase mono. Use for: `← parent` back navigation on static pages, "drill this" / "Export JSON" / "Reset all stats" / "join a league →" in-card links, "copy" share buttons, anything that's not a primary action but needs to look tappable.
+
+- Default: `px-4 py-2 text-[11px]` border + `bg-white/[0.04]` fill, lights up on hover.
+- `size="sm"`: `px-3 py-1.5 text-[10px]` (TodaysFocus card "drill this →").
+
+### `variant="floating"` — drill-screen back chip
+
+Special-case fixed-position rounded chip used ONLY on the immersive drill screens (Classic, Learn, Ranked, Daily, Replay). Renders at `top-3 left-3` on mobile, `bottom-6 left-6` on desktop. Settings chip on the same screens uses the same variant with a `right-3` / `right-6` className override.
+
+### Placement rules
+
+- **Static pages** (`/`, `/about`, `/competitive`, `/practice`, `/me`, leagues, replay error states): back navigation is a `chip` variant at `absolute top-6 left-6` with copy `← {parent name}`. Don't let it fade into the background — the chip's bg fill makes it visible without dominating.
+- **Drill screens**: back navigation is a `floating` variant. Position pattern is identical across all drill modes.
+- **Post-round panels**: primary CTA + secondary back button as siblings in `flex gap-3`. Same pattern across Classic, Learn, Ranked, Daily.
+- **Inline action rows** (e.g. /me bottom bar with Export JSON / Reset all stats): all `chip` variant.
+
+### Anti-patterns (do not improvise)
+
+- Inline class strings like `px-7 py-3 bg-white text-black ...` — use `<ZpButton variant="primary">` instead. Drift kills the system.
+- Mixing `border-white/10` and `border-white/15` arbitrarily. The component handles this.
+- Using `<button>` or `<Link>` directly for anything that's a button. Always wrap in ZpButton (use `asChild` for Links).
+- Cooking up new sizes (`px-5 py-2`, `px-6 py-2`, `px-8 py-3`). The two `size` options exist for a reason.
 
 ## Performance budget (non-negotiable)
 

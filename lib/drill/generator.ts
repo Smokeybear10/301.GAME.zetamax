@@ -1,8 +1,18 @@
 import { ZETAMAC_DEFAULTS, type GeneratorConfig } from "./config";
+import { deriveTags } from "./derive-tags";
 import { hashString, mulberry32 } from "./rng";
 import type { Op, Problem } from "./types";
 
 const ALL_OPS: readonly Op[] = ["add", "sub", "mul", "div"] as const;
+
+/** Default cap on rejection-sampling candidates per targeted problem. */
+const DEFAULT_MAX_CANDIDATES = 50;
+
+/** Salt mixed into the candidate-index hash so candidates don't collide with the index stream. */
+const CANDIDATE_SALT = 0xc2b2ae35;
+
+/** Salt for picking which target tag a given problem index aims at. */
+const TAG_PICK_SALT = 0x85ebca77;
 
 /**
  * Pure function. Same (seedHash, index, config) produces the same Problem.
@@ -12,11 +22,28 @@ const ALL_OPS: readonly Op[] = ["add", "sub", "mul", "div"] as const;
  *
  * Config controls which ops are enabled and the operand ranges. Defaults to
  * ZETAMAC_DEFAULTS for back-compat with code that doesn't pass a config.
+ *
+ * If `config.targeting` is set, the function rejection-samples up to
+ * `maxCandidates` times for a problem whose `deriveTags(...).attribution`
+ * matches one of the target tags. The target tag for this index is chosen
+ * deterministically from `config.targeting.tags`. If no candidate matches,
+ * the last candidate is returned as a fallback (better than blocking).
  */
 export function generateProblem(
   seedHash: number,
   index: number,
   config: GeneratorConfig = ZETAMAC_DEFAULTS,
+): Problem {
+  if (config.targeting && config.targeting.tags.length > 0) {
+    return generateTargetedProblem(seedHash, index, config);
+  }
+  return generateBaseProblem(seedHash, index, config);
+}
+
+function generateBaseProblem(
+  seedHash: number,
+  index: number,
+  config: GeneratorConfig,
 ): Problem {
   const rng = mulberry32((seedHash + index * 0x9e3779b1) >>> 0);
 
@@ -81,6 +108,40 @@ export function generateProblem(
     b,
     answer,
   };
+}
+
+function generateTargetedProblem(
+  seedHash: number,
+  index: number,
+  config: GeneratorConfig,
+): Problem {
+  const targeting = config.targeting!;
+  const maxCandidates = targeting.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
+
+  // Deterministically pick which target tag this problem index aims at.
+  const tagRng = mulberry32((seedHash ^ TAG_PICK_SALT) + index * 0x9e3779b1);
+  const targetTag = targeting.tags[Math.floor(tagRng() * targeting.tags.length)];
+
+  // Strip targeting from the config we pass to base — we only want vanilla
+  // problem generation in the candidate space.
+  const baseConfig: GeneratorConfig = { ops: config.ops };
+
+  let lastCandidate: Problem | null = null;
+  for (let c = 0; c < maxCandidates; c++) {
+    // Unique candidate-index per (index, c) so candidate streams across
+    // different problem indices don't collide.
+    const candidateIndex = (index * maxCandidates + c) ^ CANDIDATE_SALT;
+    const candidate = generateBaseProblem(seedHash, candidateIndex, baseConfig);
+    const tags = deriveTags(candidate.a, candidate.b, candidate.op);
+    if (tags.attribution === targetTag) {
+      return { ...candidate, id: `p${index}` };
+    }
+    lastCandidate = candidate;
+  }
+  // Fallback — return the last candidate with the canonical id. Better than
+  // blocking the round when the target is impossible (e.g., user disabled the
+  // op the tag belongs to).
+  return { ...lastCandidate!, id: `p${index}` };
 }
 
 /** Convenience wrapper that takes a string seed instead of a hash. */

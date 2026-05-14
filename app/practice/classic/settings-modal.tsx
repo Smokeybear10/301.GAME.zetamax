@@ -10,6 +10,7 @@ import {
   type OpRange,
   type PracticeConfig,
 } from "@/lib/drill";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type Props = {
   config: PracticeConfig;
@@ -247,20 +248,12 @@ export function SettingsModal({ config, onSave, onClose }: Props) {
             Reset to defaults
           </button>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2 text-sm text-white/65 hover:text-white border border-transparent hover:border-white/10 transition-colors"
-            >
+            <ZpButton variant="secondary" size="sm" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => onSave(draft)}
-              className="px-5 py-2 text-sm bg-white text-black font-medium hover:bg-transparent hover:text-white border border-white transition-colors"
-            >
+            </ZpButton>
+            <ZpButton variant="primary" size="sm" onClick={() => onSave(draft)}>
               Save
-            </button>
+            </ZpButton>
           </div>
         </div>
       </div>

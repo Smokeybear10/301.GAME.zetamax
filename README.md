@@ -1,109 +1,152 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Zetamax
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A timed mental-arithmetic drill. Zetamac feel — open the page, drill for two minutes, score saves locally. Sign in if you want your score to count against your friends'.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+Practice and Competitive share one drill engine; only what happens after the round differs.
 
-## Features
+## Modes
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+| Mode | Auth | Where score lives | What's special |
+|------|------|-------------------|----------------|
+| **Practice → Classic** | none | `localStorage` | Zetamac-compatible. Custom operand ranges, duration, keybinds. |
+| **Practice → Learn** | none | `localStorage` | Generator weighted toward your weak tags. Pulls "today's focus" from your local stats. |
+| **Competitive → Ranked** | Google | Postgres | Server-issued seed, server-validated score. Margin-aware ELO per round. |
+| **Competitive → Daily** | Google | Postgres | Shared puzzle per day, one shot. Leaderboard ranks the 30-day mean. ET midnight rollover. |
+| **Competitive → Leagues** | Google | Postgres | URL-shareable groups. Open join. Rank against just league members. |
 
-## Demo
+## Stack
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+- Next.js 15 App Router + React 19, TypeScript
+- Tailwind 3 + shadcn/ui (with a custom `ZpButton` primitive — see `DESIGN.md` for variants)
+- Supabase (Postgres + Auth + RLS), service role for write paths
+- Vitest for unit tests
+- Deployed on Vercel; localhost dev runs on port **2301**
 
-## Deploy to Vercel
+## Quick start
 
-Vercel deployment will guide you through creating a Supabase account and project.
+```bash
+# install
+npm install
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+# env — create .env.local with:
+#   NEXT_PUBLIC_SUPABASE_URL=...
+#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+#   SUPABASE_SERVICE_ROLE_KEY=...   (server-side only)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+# run migrations against your Supabase project
+supabase db push   # or apply files in supabase/migrations/ manually
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+# dev
+npm run dev        # http://localhost:2301
+```
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+Practice mode works without any Supabase setup — the drill engine and `localStorage` paths have zero backend dependency.
 
-## Clone and run locally
+## Scripts
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+```bash
+npm run dev          # next dev -p 2301
+npm run build        # next build
+npm run start        # next start
+npm run lint         # eslint
+npm run test         # vitest run
+npm run test:watch   # vitest watch
+```
 
-2. Create a Next.js app using the Supabase Starter template npx command
+## Project layout
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+```
+app/
+  page.tsx                       landing menu (Practice / Competitive / Profile)
+  about/                         /about — design + Learn explainer
+  practice/
+    classic/                     drill screen, settings modal, post-round, mobile keypad
+    learn/                       targeted drill + post-round
+  competitive/
+    ranked/                      ranked drill + leaderboard + ELO post-round
+    daily/                       daily list + per-date drill + leaderboard
+    leagues/                     league index + per-slug detail (OG image included)
+  me/                            profile, stats, mul-fact heatmap, today's focus, sparkline
+  r/[run_id]/                    public run permalink
+  auth/                          Supabase Auth callback / login / error
+  api/
+    runs/{start,finish,forfeit}  ranked + daily run lifecycle
+    leagues/{create,[slug]}      league CRUD
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+lib/
+  drill/
+    engine.ts                    round loop (status, advance, submit, scoring)
+    generator.ts                 problem generator (Zetamac-compatible + tag targeting)
+    derive-tags.ts               skill + pattern tag attribution (versioned)
+    round-analytics.ts           per-op / per-tag analytics from a finished round
+    validate.ts                  server-side answer-key check + sanity gates
+    daily-seed.ts                deterministic seed for the day's puzzle
+    rng.ts                       mulberry32 + string hash
+    config.ts                    ZETAMAC_DEFAULTS, presets, keybinds, normalization
+    precompute.ts                server-side answer-key precomputation
+  practice-stats.ts              localStorage rollup (PB, totals, per-tag latencies)
+  use-drill.ts                   React hook around the engine
+  use-local-history.ts           local PB / daily / lifetime tracking
+  use-practice-config.ts         settings persistence
+  runs-api.ts                    typed client for /api/runs
+  leagues/                       league client helpers
+  supabase/                      ssr + service-role clients, middleware
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+supabase/migrations/             ordered SQL — schema, leagues, ELO, daily, cleanup jobs
 
-3. Use `cd` to change into the app's directory
+components/ui/                   shadcn primitives + zp-button (the canonical button)
+```
 
-   ```bash
-   cd with-supabase-app
-   ```
+## How the drill works
 
-4. Rename `.env.example` to `.env.local` and update the following:
+The engine is ~150–200 LOC of pure TS. A `Drill` instance owns the timer, current problem index, typed answer, and emits keystroke/answer events. The input is an imperative `useRef`'d native `<input>` — keystroke-to-render must stay under 16 ms, so we read/write the value outside React's reconciler and only re-render on problem boundaries.
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+**Problem generation** is deterministic from `(seedHash, index, config)`. The Zetamac defaults: `2..100 + 2..100`, `2..100 - 2..100` (result ≥ 0), `2..12 × 2..100`, `(2..100) ÷ (2..12)`. Learn mode adds rejection-sampled tag targeting on top.
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+**Tag attribution** (`deriveTags`) produces a `skillTag` plus zero or more `patternTag`s per problem. Pattern tags trump skill tags. Versioned so old rounds can be re-tagged when rules improve.
 
-5. You can now run the Next.js local development server:
+## How competitive runs stay honest
 
-   ```bash
-   npm run dev
-   ```
+Two-endpoint flow with a **server-only answer key**:
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+1. `POST /api/runs/start` — verifies the session, rejects if the user has an unfinished run younger than 125 s, generates a seed, precomputes the answer key, inserts a `runs` row with `validation_status='pending'`, returns `{ run_id, seed }`. The client uses the seed only to *render* problem text.
+2. `POST /api/runs/finish` — verifies the session, reloads the row, checks wall-clock duration is within 120 s ± 2 s, compares each submitted answer to the server answer key, applies sanity gates (median inter-answer gap, no impossible streaks), writes the validated score with the service role.
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+The split + the single-active-run constraint defeats the "precompute every answer from the seed in milliseconds" attack.
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+Daily and ranked share this flow. Forfeit (refresh / close tab mid-run) is handled by `POST /api/runs/forfeit` plus a nightly cron that flips abandoned `pending` rows.
 
-## Feedback and issues
+## Leaderboard
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+Friend / league reads go through a `SECURITY DEFINER` RPC (`get_friend_leaderboard`, plus league variants) that bypasses RLS but enforces membership internally. Direct `SELECT * FROM runs` is RLS-restricted to your own rows. Tie-breaker: same best score → earlier `started_at` ranks higher (first to reach the score wins). Daily window is fixed to America/New_York midnight.
 
-## More Supabase examples
+Runs with `score < 5` are stored but excluded from the leaderboard — accidental-open rounds don't pollute rankings.
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+## ELO
+
+Hybrid race + baseline. Margin-aware: a 47–30 win moves more than a 47–46 win. Rebaselined to 1200 in `20260503200000_elo_rebaseline_1200.sql`. See migrations `20260503020000_elo.sql` and `20260503190000_elo_baseline.sql` for the full update rule.
+
+## Stats & Learn (local)
+
+Practice rounds feed `practice-stats.ts`, which keeps a rolling per-tag latency distribution in `localStorage`. The Learn diagnostic uses log-transformed latencies with empirical-Bayes shrinkage and sample-size floors (≥30 total, ≥10 per tag, ≥70% confidence) before flagging a "today's focus" tag. Late-round events (last 10 s) are excluded so end-of-round panic doesn't taint the diagnosis.
+
+Export / wipe at `/me → Stats`.
+
+## Testing
+
+```bash
+npm run test
+```
+
+Coverage focuses on the engine, generator, tag attribution, validator, round analytics, local history, and the daily seed. UI is verified manually — see `DESIGN.md` for the state matrix.
+
+## Reference docs
+
+- `DESIGN.md` — v1 spec, design tokens, route IA, anti-cheat flow, button system
+- `TODOS.md` — deferred roadmap (v2–v5)
+- `PLAYBOOK.md` — the planning workflow that produced this repo
+- `PROMPTS.md` — verbatim prompts from the design session
+
+## Credit
+
+Inspired by [Zetamac](https://arithmetic.zetamac.com/). Built to keep the keyboard feel intact while making the score stick.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ZpButton } from "@/components/ui/zp-button";
 
 export const metadata = {
   title: "Practice — Zetamax",
@@ -36,23 +37,19 @@ const MODES: Mode[] = [
   },
   {
     num: "04",
-    slug: "weakness",
-    title: "Weakness",
-    subtitle: "soon — drills your weak facts",
-    href: null,
+    slug: "learn",
+    title: "Learn",
+    subtitle: "drills your weakest patterns",
+    href: "/practice/learn",
   },
 ];
 
 export default function PracticeMenu() {
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-16 select-none antialiased">
-      <Link
-        href="/"
-        aria-label="Back to home"
-        className="absolute top-6 left-6 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-      >
-        ← menu
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
+        <Link href="/" aria-label="Back to home">← menu</Link>
+      </ZpButton>
 
       <div className="text-center mb-12 sm:mb-14">
         <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 mb-3">
@@ -101,7 +98,7 @@ export default function PracticeMenu() {
       </div>
 
       <p className="absolute bottom-6 font-mono text-[10px] tracking-[0.32em] text-white/30 uppercase">
-        more modes shipping
+        more modes coming
       </p>
     </main>
   );

@@ -1,12 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ZETAMAC_DEFAULTS, type Problem, type RoundResult } from "@/lib/drill";
+import { useEffect, useRef, useState } from "react";
+import {
+  DAILY_DURATION_MS,
+  DAILY_TARGET_COUNT,
+  ZETAMAC_DEFAULTS,
+  type Problem,
+  type RoundResult,
+} from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { startRun } from "@/lib/runs-api";
 import { createClient } from "@/lib/supabase/client";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
+import { ZpButton } from "@/components/ui/zp-button";
 import { DailyPostRound } from "./daily-post-round";
 
 const DIGIT_KEYS = new Set([
@@ -21,7 +28,13 @@ const OP_WORD: Record<Problem["op"], string> = {
   add: "plus", sub: "minus", mul: "times", div: "divided by",
 };
 
+// Daily v2: skip is disabled engine-side. Tab keystrokes are silently swallowed.
 const KEYBINDS = { submit: "Enter", skip: "Tab", delete: "Backspace" } as const;
+const DRILL_OPTS = {
+  terminationMode: "count",
+  targetCount: DAILY_TARGET_COUNT,
+  disableSkip: true,
+} as const;
 
 const SHORT_MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -34,7 +47,7 @@ function dateLabel(iso: string): string {
 }
 
 function formatTime(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
+  const total = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
@@ -43,13 +56,19 @@ function formatTime(ms: number): string {
 type StartState =
   | { phase: "loading" }
   | { phase: "ready"; runId: string; seed: string; durationMs: number }
-  | { phase: "already_attempted"; status: string; score: number | null }
+  | { phase: "already_attempted"; status: string; durationMs: number | null }
   | { phase: "error"; code: string };
 
 export function DailyDrillScreen({ date }: { date: string }) {
   const [start, setStart] = useState<StartState>({ phase: "loading" });
   const [submission, setSubmission] = useState<
-    | { runId: string; result: RoundResult; startedAtMs: number }
+    | {
+        runId: string;
+        seed: string;
+        durationMs: number;
+        result: RoundResult;
+        startedAtMs: number;
+      }
     | null
   >(null);
 
@@ -89,7 +108,7 @@ export function DailyDrillScreen({ date }: { date: string }) {
           if (uid) {
             const { data } = await supabase
               .from("runs")
-              .select("validation_status, score")
+              .select("validation_status, duration_ms")
               .eq("user_id", uid)
               .eq("mode", "daily")
               .eq("daily_date", date)
@@ -98,7 +117,7 @@ export function DailyDrillScreen({ date }: { date: string }) {
             setStart({
               phase: "already_attempted",
               status: (data?.validation_status as string) ?? "unknown",
-              score: data?.score ?? null,
+              durationMs: data?.duration_ms ?? null,
             });
             return;
           }
@@ -112,8 +131,16 @@ export function DailyDrillScreen({ date }: { date: string }) {
   }, [date]);
 
   const seed = start.phase === "ready" ? start.seed : `daily-loading-${date}`;
-  const durationMs = start.phase === "ready" ? start.durationMs : 120_000;
-  const { state, drill } = useDrill(seed, durationMs, ZETAMAC_DEFAULTS, KEYBINDS);
+  const durationMs = start.phase === "ready" ? start.durationMs : DAILY_DURATION_MS;
+  const { state, drill } = useDrill(
+    seed,
+    durationMs,
+    ZETAMAC_DEFAULTS,
+    KEYBINDS,
+    DRILL_OPTS,
+  );
+
+  const elapsedMs = durationMs - state.msRemaining;
 
   // Imperative typed answer write
   useEffect(() => {
@@ -160,6 +187,8 @@ export function DailyDrillScreen({ date }: { date: string }) {
     const result: RoundResult = drill.end();
     setSubmission({
       runId: start.runId,
+      seed: start.seed,
+      durationMs: start.durationMs,
       result,
       startedAtMs: startedAtMsRef.current ?? Date.now() - durationMs,
     });
@@ -185,13 +214,13 @@ export function DailyDrillScreen({ date }: { date: string }) {
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
       <header className="grid grid-cols-3 items-center px-8 pt-8 font-mono text-sm font-light tabular-nums">
         <span className={`${state.status === "running" ? "text-white" : "text-white/42"} text-left`}>
-          {state.score}
+          {Math.min(state.score + 1, DAILY_TARGET_COUNT)} of {DAILY_TARGET_COUNT}
         </span>
         <span className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 text-center">
           daily · {dateLabel(date)}
         </span>
         <span className={`${state.status === "running" ? "text-white" : "text-white/42"} text-right`}>
-          {formatTime(state.msRemaining)}
+          {formatTime(elapsedMs)}
         </span>
       </header>
 
@@ -205,7 +234,11 @@ export function DailyDrillScreen({ date }: { date: string }) {
         {start.phase === "error" && <ErrorState code={start.code} />}
 
         {start.phase === "already_attempted" && (
-          <AlreadyAttemptedState status={start.status} score={start.score} date={date} />
+          <AlreadyAttemptedState
+            status={start.status}
+            durationMs={start.durationMs}
+            date={date}
+          />
         )}
 
         {start.phase === "ready" && state.status === "idle" && (
@@ -255,21 +288,24 @@ export function DailyDrillScreen({ date }: { date: string }) {
       />
 
       {showMenuChip && (
-        <Link
-          href="/competitive/daily"
-          aria-label="Back to daily"
-          title="Daily"
-          className="fixed top-3 left-3 sm:top-auto sm:bottom-6 sm:left-6 flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.04] text-white/65 hover:text-white hover:bg-white/[0.08] hover:border-white/30 transition-colors font-mono text-[11px] tracking-[0.28em] uppercase"
-        >
-          <span aria-hidden="true">←</span>
-          <span className="hidden sm:inline">daily</span>
-        </Link>
+        <ZpButton asChild variant="floating">
+          <Link
+            href="/competitive/daily"
+            aria-label="Back to daily"
+            title="Daily"
+          >
+            <span aria-hidden="true">←</span>
+            <span className="hidden sm:inline">daily</span>
+          </Link>
+        </ZpButton>
       )}
 
       {submission && (
         <DailyPostRound
           date={date}
           runId={submission.runId}
+          seed={submission.seed}
+          durationMs={submission.durationMs}
           result={submission.result}
           startedAtMs={submission.startedAtMs}
         />
@@ -286,24 +322,24 @@ export function DailyDrillScreen({ date }: { date: string }) {
 
 function AlreadyAttemptedState({
   status,
-  score,
+  durationMs,
   date,
 }: {
   status: string;
-  score: number | null;
+  durationMs: number | null;
   date: string;
 }) {
   const isCompleted = status === "ok";
-  const isForfeited = status === "forfeited";
+  const isForfeited = status === "forfeited" || status === "rejected_incomplete";
   const headline = isCompleted
     ? "Done for this day."
     : isForfeited
       ? "Forfeited."
       : "Already attempted.";
   const detail = isCompleted
-    ? `You scored ${score} on ${dateLabel(date)}.`
+    ? `You finished in ${durationMs !== null ? formatTime(durationMs) : "—"} on ${dateLabel(date)}.`
     : isForfeited
-      ? "You started this day's puzzle and bailed mid-round. No retry."
+      ? "You started this day's puzzle and didn't finish in time. No retry."
       : `Existing status: ${status}. No retry.`;
   return (
     <div className="text-center max-w-md">
@@ -314,12 +350,9 @@ function AlreadyAttemptedState({
         {headline}
       </h1>
       <p className="text-white/65 mb-8 leading-relaxed">{detail}</p>
-      <Link
-        href="/competitive/daily"
-        className="inline-block px-6 py-2 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-xs tracking-[0.18em] uppercase"
-      >
-        back to daily
-      </Link>
+      <ZpButton asChild variant="chip">
+        <Link href="/competitive/daily">back to daily</Link>
+      </ZpButton>
     </div>
   );
 }
@@ -342,12 +375,9 @@ function ErrorState({ code }: { code: string }) {
         Daily failed to start
       </p>
       <p className="text-white/75 mb-8 leading-relaxed">{copy}</p>
-      <Link
-        href="/competitive/daily"
-        className="inline-block px-6 py-2 border border-white/15 hover:border-white text-white/65 hover:text-white transition-colors font-mono text-xs tracking-[0.18em] uppercase"
-      >
-        back to daily
-      </Link>
+      <ZpButton asChild variant="chip">
+        <Link href="/competitive/daily">back to daily</Link>
+      </ZpButton>
     </div>
   );
 }

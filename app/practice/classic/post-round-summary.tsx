@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { RoundResult } from "@/lib/drill";
 import { getStats, type LocalStats } from "@/lib/use-local-history";
+import { TodaysFocus } from "@/app/me/todays-focus";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type Props = {
   result: RoundResult;
@@ -79,21 +81,18 @@ export function PostRoundSummary({ result, onPlayAgain }: Props) {
         <Stat label="runs" value={`${stats.totalRuns}`} />
       </div>
 
+      <div className="pt-14">
+        <TodaysFocus />
+      </div>
+
       {/* Actions */}
       <div className="flex gap-3 pt-16 zp-fade zp-fade-5">
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          className="px-7 py-3 bg-white text-black font-medium text-sm rounded-none hover:bg-transparent hover:text-white border border-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-        >
+        <ZpButton variant="primary" onClick={onPlayAgain}>
           Drill again
-        </button>
-        <Link
-          href="/"
-          className="px-7 py-3 border border-white/10 text-white/65 hover:text-white hover:border-white text-sm transition-colors flex items-center"
-        >
-          Menu
-        </Link>
+        </ZpButton>
+        <ZpButton asChild variant="secondary">
+          <Link href="/">Menu</Link>
+        </ZpButton>
       </div>
 
       <p className="font-mono text-[10px] tracking-[0.18em] text-white/30 mt-8 zp-fade zp-fade-5">

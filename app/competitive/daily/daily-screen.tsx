@@ -8,12 +8,13 @@ import {
   todayET,
   DAILY_WINDOW_DAYS,
 } from "@/lib/drill/daily-seed";
+import { ZpButton } from "@/components/ui/zp-button";
 import { DailyLeaderboardPanel } from "./daily-leaderboard-panel";
 
 type DailyRow = {
   daily_date: string;
   validation_status: string;
-  score: number | null;
+  duration_ms: number | null;
 };
 
 type Status = "available" | "completed" | "forfeited" | "pending";
@@ -21,9 +22,16 @@ type Status = "available" | "completed" | "forfeited" | "pending";
 type DayCell = {
   iso: string;
   status: Status;
-  score: number | null;
+  durationMs: number | null;
   isToday: boolean;
 };
+
+function formatTime(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 type Phase = "loading" | "ready" | "signed-out" | "error";
 
@@ -66,7 +74,7 @@ export function DailyScreen() {
     const minDate = last30DailyDates(t)[0];
     const { data, error: queryError } = await supabase
       .from("runs")
-      .select("daily_date, validation_status, score")
+      .select("daily_date, validation_status, duration_ms")
       .eq("user_id", user.id)
       .eq("mode", "daily")
       .gte("daily_date", minDate);
@@ -95,7 +103,7 @@ export function DailyScreen() {
       return {
         iso,
         status: r ? statusFromRow(r.validation_status) : "available",
-        score: r?.score ?? null,
+        durationMs: r?.duration_ms ?? null,
         isToday: iso === today,
       };
     });
@@ -103,13 +111,9 @@ export function DailyScreen() {
 
   return (
     <main className="min-h-screen bg-black text-white antialiased">
-      <Link
-        href="/competitive"
-        aria-label="Back to competitive modes"
-        className="absolute top-6 left-6 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-      >
-        ← modes
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
+        <Link href="/competitive" aria-label="Back to competitive modes">← modes</Link>
+      </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
         <header className="mb-10 sm:mb-12">
@@ -137,12 +141,9 @@ export function DailyScreen() {
               Signed out
             </p>
             <p className="text-white/65 mb-6">Sign in to play the Daily.</p>
-            <Link
-              href="/auth/login"
-              className="inline-block px-6 py-2 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors"
-            >
-              Continue with Google
-            </Link>
+            <ZpButton asChild variant="primary">
+              <Link href="/auth/login">Continue with Google</Link>
+            </ZpButton>
           </div>
         )}
 
@@ -204,7 +205,10 @@ function DayRow({ cell }: { cell: DayCell }) {
         {cell.status === "available" && "open"}
         {cell.status === "completed" && (
           <>
-            done · <span className="tabular-nums text-white">{cell.score}</span>
+            done ·{" "}
+            <span className="tabular-nums text-white">
+              {cell.durationMs !== null ? formatTime(cell.durationMs) : "—"}
+            </span>
           </>
         )}
         {cell.status === "forfeited" && "forfeited"}

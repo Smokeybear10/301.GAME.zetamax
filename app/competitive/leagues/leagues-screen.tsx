@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ZpButton } from "@/components/ui/zp-button";
 
 type LeagueRow = {
   league_id: string;
@@ -66,13 +67,9 @@ export function LeaguesScreen() {
 
   return (
     <main className="min-h-screen bg-black text-white antialiased">
-      <Link
-        href="/competitive"
-        aria-label="Back to competitive modes"
-        className="absolute top-6 left-6 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 hover:text-white transition-colors"
-      >
-        ← modes
-      </Link>
+      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
+        <Link href="/competitive" aria-label="Back to competitive modes">← modes</Link>
+      </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
         <header className="mb-12 sm:mb-16">
@@ -142,13 +139,13 @@ export function LeaguesScreen() {
               className="flex-1 px-4 py-3 bg-transparent border border-white/15 text-white placeholder-white/30 font-light focus:outline-none focus:border-white transition-colors"
               disabled={creating}
             />
-            <button
+            <ZpButton
               type="submit"
+              variant="primary"
               disabled={creating || name.trim().length < 1}
-              className="px-7 py-3 bg-white text-black font-medium text-sm hover:bg-transparent hover:text-white border border-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black"
             >
               {creating ? "Creating…" : "Create"}
-            </button>
+            </ZpButton>
           </form>
           {error && (
             <p className="font-mono text-[11px] text-white/65 mt-3">{error}</p>
