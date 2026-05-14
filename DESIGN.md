@@ -543,6 +543,7 @@ The design must never ship with any of these:
 8. Colored left-border on cards (except the *current user* row on `/competitive`, which is the only intentional use).
 9. Generic hero copy ("Welcome to X", "Unlock the power of...").
 10. Cookie-cutter section rhythm (hero → 3 features → testimonials → pricing → CTA).
+11. **Numbered prefixes on body section titles** (`§01 Practice`, `02 — Competitive`, `01. How Learn works`). Sequence numerals on prose section headings read AI-generated — they signal "machine designed" instead of "edited by a person." Use plain labels and rely on weight, brightness, hairline rules, marginalia, or a TOC for hierarchy. **Exception:** the `01 / 02 / 03` numerals on the home-page menu cards (Practice / Competitive / Profile) and the about-page footer (Drill → / Compete →) are *sequence indicators on navigation targets*, not section titles — those stay.
 
 If a design proposal triggers any of these, the answer is "no, redo it."
 
