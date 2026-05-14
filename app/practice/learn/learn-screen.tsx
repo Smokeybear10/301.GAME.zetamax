@@ -148,7 +148,7 @@ function LockedView({ have, need }: { have: number; need: number }) {
   return (
     <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 py-16 antialiased">
       <ZpButton asChild variant="chip" className="absolute top-6 left-6">
-        <Link href="/practice" aria-label="Back to practice modes">← practice</Link>
+        <Link href="/" aria-label="Back to home">← home</Link>
       </ZpButton>
 
       <div className="text-center mb-8">
@@ -187,7 +187,7 @@ function LockedView({ have, need }: { have: number; need: number }) {
           <Link href="/practice/classic">Drill Classic</Link>
         </ZpButton>
         <ZpButton asChild variant="secondary">
-          <Link href="/practice">Modes</Link>
+          <Link href="/">Home</Link>
         </ZpButton>
       </div>
     </main>
@@ -359,12 +359,12 @@ function ActiveView({
       {state.status !== "running" && (
         <ZpButton asChild variant="floating">
           <Link
-            href="/practice"
-            aria-label="Back to practice modes"
-            title="Practice modes"
+            href="/"
+            aria-label="Back to home"
+            title="Home"
           >
             <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">modes</span>
+            <span className="hidden sm:inline">home</span>
           </Link>
         </ZpButton>
       )}

@@ -118,7 +118,7 @@ function renderCta(state: State) {
   if (state.kind === "focus") {
     return (
       <Link
-        href={`/practice?focus=${encodeURIComponent(state.focus.tag)}`}
+        href="/practice/learn"
         className="self-end bg-white text-black text-[11px] tracking-[0.24em] uppercase px-[18px] py-3 whitespace-nowrap hover:bg-white/85 transition-colors font-mono"
       >
         Drill this →
@@ -128,7 +128,7 @@ function renderCta(state: State) {
   if (state.kind === "locked") {
     return (
       <Link
-        href="/practice"
+        href="/practice/classic"
         className="self-end border border-white/[0.12] hover:border-white/[0.28] text-white text-[11px] tracking-[0.24em] uppercase px-[18px] py-3 whitespace-nowrap transition-colors font-mono"
       >
         Drill →

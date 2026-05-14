@@ -174,7 +174,7 @@ function Buttons({ onPlayAgain }: { onPlayAgain: () => void }) {
           Drill again
         </ZpButton>
         <ZpButton asChild variant="secondary">
-          <Link href="/practice">Modes</Link>
+          <Link href="/">Home</Link>
         </ZpButton>
       </div>
       <p className="font-mono text-[10px] tracking-[0.18em] text-white/30 mt-6 zp-fade zp-fade-5">

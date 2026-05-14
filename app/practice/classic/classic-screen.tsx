@@ -173,12 +173,12 @@ export function ClassicScreen() {
       {settingsAccessible && (
         <ZpButton asChild variant="floating">
           <Link
-            href="/practice"
-            aria-label="Back to practice modes"
-            title="Practice modes"
+            href="/"
+            aria-label="Back to home"
+            title="Home"
           >
             <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">modes</span>
+            <span className="hidden sm:inline">home</span>
           </Link>
         </ZpButton>
       )}

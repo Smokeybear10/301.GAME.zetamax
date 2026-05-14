@@ -187,7 +187,7 @@ function EmptyState() {
         — all computed locally from your rounds.
       </p>
       <ZpButton asChild variant="primary">
-        <Link href="/practice">Start drilling</Link>
+        <Link href="/practice/classic">Start drilling</Link>
       </ZpButton>
     </div>
   );

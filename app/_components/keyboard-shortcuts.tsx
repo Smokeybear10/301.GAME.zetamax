@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 
 const ROUTES: Record<string, string> = {
   Enter: "/competitive/ranked",
-  p: "/practice",
+  p: "/practice/classic",
+  l: "/practice/learn",
   d: "/competitive/daily",
   m: "/me",
   a: "/about",
