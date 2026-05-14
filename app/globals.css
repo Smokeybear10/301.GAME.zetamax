@@ -18,6 +18,63 @@
   to   { opacity: 1; transform: translateY(0);   }
 }
 
+/* Heatmap cells — diagonal wave reveal on mount + relational ripple on hover.
+   Each cell sets --reveal-delay inline from its (a+b) position, so the wave
+   sweeps from the top-left toward the bottom-right. */
+@media (prefers-reduced-motion: no-preference) {
+  .heatmap-cell {
+    animation: heatmap-cell-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--reveal-delay, 0ms);
+    transition: filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+                outline 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity, filter;
+  }
+  .heatmap-related {
+    filter: brightness(1.7);
+    outline: 1px solid rgba(255, 255, 255, 0.5);
+    outline-offset: 1px;
+    z-index: 1;
+    position: relative;
+  }
+  .heatmap-self {
+    filter: brightness(2);
+    outline: 1.5px solid rgba(255, 255, 255, 0.95);
+    outline-offset: 1px;
+    z-index: 2;
+    position: relative;
+  }
+}
+@keyframes heatmap-cell-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* View Transitions — opt-in page morphs via TransitionLink. The root crossfade
+   tightens the default 250ms snap to a calmer ease-out, and named transitions
+   (e.g. ranked-hero) match home tiles to their destination page hero. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 320ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(ranked-hero),
+  ::view-transition-new(ranked-hero) {
+    animation-duration: 520ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(daily-hero),
+  ::view-transition-new(daily-hero) {
+    animation-duration: 520ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(competitive-hero),
+  ::view-transition-new(competitive-hero) {
+    animation-duration: 520ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
 /* a11y: when the OS signals reduce-motion, collapse every animation and
    transition to ~instant. Belt-and-suspenders alongside the motion-safe:
    Tailwind variants — anything we forget to gate still degrades gracefully.

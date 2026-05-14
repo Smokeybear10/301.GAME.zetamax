@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { TransitionLink } from "./transition-link";
 
 type Current = "home" | "about" | "practice" | "competitive" | "me" | null;
 
@@ -23,13 +24,13 @@ export async function SiteHead({
 
   return (
     <header className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
-      <Link
+      <TransitionLink
         href="/"
         className="font-sans text-[22px] leading-none tracking-[-0.04em] text-white"
       >
         <span className="font-extralight">zeta</span>
         <span className="font-black">max</span>
-      </Link>
+      </TransitionLink>
       <span className="text-[11px] text-white/55 tracking-[0.04em] hidden sm:block font-mono">
         {subline ?? <DefaultSubline />}
       </span>
@@ -43,7 +44,7 @@ export async function SiteHead({
         compete
       </HeadLink>
       {displayName ? (
-        <Link
+        <TransitionLink
           href="/me"
           className={
             "flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase border px-3.5 py-1.5 transition-colors font-mono " +
@@ -54,7 +55,7 @@ export async function SiteHead({
         >
           <span className="block w-1.5 h-1.5 bg-white rounded-full" aria-hidden />
           {displayName}
-        </Link>
+        </TransitionLink>
       ) : (
         <Link
           href="/auth/login"
@@ -79,7 +80,7 @@ function HeadLink({
   className?: string;
 }) {
   return (
-    <Link
+    <TransitionLink
       href={href}
       className={
         "text-[11px] tracking-[0.18em] uppercase px-2.5 py-1.5 border transition-colors font-mono " +
@@ -91,7 +92,7 @@ function HeadLink({
       }
     >
       {children}
-    </Link>
+    </TransitionLink>
   );
 }
 

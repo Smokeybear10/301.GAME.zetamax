@@ -110,7 +110,10 @@ export function DailyScreen() {
   }, [today, rows]);
 
   return (
-    <main className="min-h-screen bg-black text-white antialiased">
+    <main
+      className="min-h-screen bg-black text-white antialiased"
+      style={{ viewTransitionName: "daily-hero" } as React.CSSProperties}
+    >
       <ZpButton asChild variant="chip" className="absolute top-6 left-6">
         <Link href="/competitive" aria-label="Back to competitive modes">← modes</Link>
       </ZpButton>

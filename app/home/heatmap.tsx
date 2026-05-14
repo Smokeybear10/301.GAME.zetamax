@@ -39,6 +39,7 @@ export function Heatmap() {
   const [cells, setCells] = useState<Cell[]>([]);
   const [overallAccuracy, setOverallAccuracy] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
+  const [hover, setHover] = useState<{ a: number; b: number } | null>(null);
 
   useEffect(() => {
     const rows = getHistory();
@@ -90,7 +91,7 @@ export function Heatmap() {
           <Grid empty />
         </div>
       ) : (
-        <Grid cells={cells} />
+        <Grid cells={cells} hover={hover} onHover={setHover} />
       )}
 
       <div className="flex items-center gap-2.5 text-[10px] tracking-[0.18em] uppercase text-white/42 mt-3 font-mono">
@@ -109,7 +110,17 @@ export function Heatmap() {
   );
 }
 
-function Grid({ cells, empty }: { cells?: Cell[]; empty?: boolean }) {
+function Grid({
+  cells,
+  empty,
+  hover,
+  onHover,
+}: {
+  cells?: Cell[];
+  empty?: boolean;
+  hover?: { a: number; b: number } | null;
+  onHover?: (h: { a: number; b: number } | null) => void;
+}) {
   if (empty) {
     return (
       <div className="grid grid-cols-12 gap-[2px] mt-1 opacity-60">
@@ -120,14 +131,34 @@ function Grid({ cells, empty }: { cells?: Cell[]; empty?: boolean }) {
     );
   }
   return (
-    <div className="grid grid-cols-12 gap-[2px] mt-1">
-      {(cells ?? []).map((c, i) => (
-        <span
-          key={i}
-          className={"aspect-square block " + tone(intensity(c))}
-          title={`${c.a} × ${c.b} · n=${c.n} · acc=${Math.round(c.accuracy * 100)}%`}
-        />
-      ))}
+    <div className="grid grid-cols-12 gap-[2px] mt-1" onMouseLeave={() => onHover?.(null)}>
+      {(cells ?? []).map((c, i) => {
+        const isSelf = hover != null && c.a === hover.a && c.b === hover.b;
+        const isRelated =
+          !isSelf &&
+          hover != null &&
+          (c.a === hover.a ||
+            c.b === hover.b ||
+            (c.a === hover.b && c.b === hover.a));
+        return (
+          <span
+            key={i}
+            className={
+              "aspect-square block heatmap-cell " +
+              tone(intensity(c)) +
+              (isSelf ? " heatmap-self" : "") +
+              (isRelated ? " heatmap-related" : "")
+            }
+            style={
+              {
+                "--reveal-delay": `${(c.a + c.b - 2) * 22}ms`,
+              } as React.CSSProperties
+            }
+            onMouseEnter={() => onHover?.({ a: c.a, b: c.b })}
+            title={`${c.a} × ${c.b} · n=${c.n} · acc=${Math.round(c.accuracy * 100)}%`}
+          />
+        );
+      })}
     </div>
   );
 }

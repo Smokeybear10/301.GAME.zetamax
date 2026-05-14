@@ -7,6 +7,7 @@ import { finishRun, type FinishRunResponse } from "@/lib/runs-api";
 import { saveRun } from "@/lib/use-local-history";
 import { TodaysFocus } from "@/app/me/todays-focus";
 import { ZpButton } from "@/components/ui/zp-button";
+import { AnimatedCountUp } from "@/app/_components/animated-countup";
 import { LeaderboardPanel } from "./leaderboard-panel";
 
 type Submission =
@@ -223,12 +224,25 @@ function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
   return (
     <div className="w-full max-w-md mb-10 zp-fade zp-fade-3">
       <div className="flex items-baseline justify-center gap-3 mb-3 flex-wrap">
-        <span className={`font-mono tabular-nums text-2xl ${tone}`}>
+        <span className={`font-mono tabular-nums text-2xl ${tone} inline-flex items-baseline`}>
           {sign}
-          {Math.abs(elo.rating_delta)} ELO
+          <AnimatedCountUp
+            from={0}
+            to={Math.abs(elo.rating_delta)}
+            delayMs={1100}
+            durationMs={1200}
+          />
+          <span className="ml-[0.5ch]">ELO</span>
         </span>
-        <span className="font-mono text-[11px] tabular-nums text-white/42">
-          {beforeRating} → {elo.new_rating}
+        <span className="font-mono text-[11px] tabular-nums text-white/42 inline-flex items-baseline">
+          <span>{beforeRating}</span>
+          <span className="mx-[0.6ch]">→</span>
+          <AnimatedCountUp
+            from={beforeRating}
+            to={elo.new_rating}
+            delayMs={1100}
+            durationMs={1200}
+          />
         </span>
         {elo.is_provisional && (
           <span

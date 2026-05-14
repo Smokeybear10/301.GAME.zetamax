@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SiteHead } from "./_components/site-head";
 import { StatusBar } from "./_components/status-bar";
 import { KeyboardShortcuts } from "./_components/keyboard-shortcuts";
+import { TransitionLink } from "./_components/transition-link";
 import { YourDay } from "./home/your-day";
 import { Heatmap } from "./home/heatmap";
 import { Focus } from "./home/focus";
@@ -190,6 +191,7 @@ export default async function Home() {
             name="Daily"
             sub={<>today&apos;s puzzle · 30-day mean ranks</>}
             cta="play →"
+            viewTransitionName="daily-hero"
           />
           <ModeTile
             href="/competitive/leagues"
@@ -246,9 +248,10 @@ function PlayRanked({
       : "data insufficient · no ranked rounds yet";
 
   return (
-    <Link
+    <TransitionLink
       href={loggedIn ? "/competitive/ranked" : "/auth/login"}
       className="group bg-white text-black p-7 sm:p-8 grid grid-rows-[auto_1fr_auto] gap-[18px] min-h-[220px] hover:opacity-95 transition-opacity"
+      style={loggedIn ? ({ viewTransitionName: "ranked-hero" } as React.CSSProperties) : undefined}
     >
       <div className="flex justify-between items-baseline text-[10.5px] tracking-[0.24em] uppercase text-black/50 font-mono">
         <span>RANKED · 120s · ELO</span>
@@ -266,7 +269,7 @@ function PlayRanked({
           start
         </span>
       </div>
-    </Link>
+    </TransitionLink>
   );
 }
 
@@ -371,17 +374,24 @@ function ModeTile({
   name,
   sub,
   cta,
+  viewTransitionName,
 }: {
   href: string;
   badge: string;
   name: string;
   sub: React.ReactNode;
   cta: string;
+  viewTransitionName?: string;
 }) {
   return (
-    <Link
+    <TransitionLink
       href={href}
       className="group bg-[#111] border border-white/[0.12] p-[18px] pb-4 flex flex-col justify-between min-h-[130px] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors"
+      style={
+        viewTransitionName
+          ? ({ viewTransitionName } as React.CSSProperties)
+          : undefined
+      }
     >
       <div className="flex justify-end text-[10px] tracking-[0.24em] uppercase text-white/42 font-mono">
         <span className="truncate">{badge}</span>
@@ -395,7 +405,7 @@ function ModeTile({
       <div className="text-[11px] text-white/42 group-hover:text-white transition-colors mt-2.5 font-mono">
         {cta}
       </div>
-    </Link>
+    </TransitionLink>
   );
 }
 

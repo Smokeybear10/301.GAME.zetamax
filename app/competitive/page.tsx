@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SiteHead } from "@/app/_components/site-head";
 import { StatusBar } from "@/app/_components/status-bar";
 import { KeyboardShortcuts } from "@/app/_components/keyboard-shortcuts";
+import { TransitionLink } from "@/app/_components/transition-link";
 
 export const metadata = {
   title: "Competitive — Zetamax",
@@ -170,9 +170,10 @@ function RankedTile({ data }: { data: CompetitiveData }) {
       : "data insufficient · no ranked rounds yet";
 
   return (
-    <Link
+    <TransitionLink
       href={data.loggedIn ? "/competitive/ranked" : "/auth/login"}
       className="group bg-white text-black p-7 grid grid-rows-[auto_1fr_auto] gap-4 min-h-[220px] hover:opacity-95 transition-opacity"
+      style={data.loggedIn ? ({ viewTransitionName: "ranked-hero" } as React.CSSProperties) : undefined}
     >
       <div className="flex justify-between items-baseline text-[10.5px] tracking-[0.24em] uppercase text-black/50 font-mono">
         <span>Ranked · 120s · ELO</span>
@@ -195,7 +196,7 @@ function RankedTile({ data }: { data: CompetitiveData }) {
           </span>
         )}
       </div>
-    </Link>
+    </TransitionLink>
   );
 }
 
@@ -208,9 +209,10 @@ function DailyTile({ data }: { data: CompetitiveData }) {
       : "data insufficient · you haven't played today";
 
   return (
-    <Link
+    <TransitionLink
       href={data.loggedIn ? "/competitive/daily" : "/auth/login"}
       className="group bg-[#111] border border-white/[0.12] p-6 sm:p-7 grid grid-rows-[auto_1fr_auto] gap-4 min-h-[220px] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors"
+      style={data.loggedIn ? ({ viewTransitionName: "daily-hero" } as React.CSSProperties) : undefined}
     >
       <div className="flex justify-between items-baseline text-[10.5px] tracking-[0.24em] uppercase text-white/42 font-mono">
         <span>Daily · 1 shot · 30-day mean</span>
@@ -225,7 +227,7 @@ function DailyTile({ data }: { data: CompetitiveData }) {
           ↩ {played ? "view board" : "play"}
         </span>
       </div>
-    </Link>
+    </TransitionLink>
   );
 }
 
@@ -239,7 +241,7 @@ function LeaguesTile({ data }: { data: CompetitiveData }) {
         : "ready";
 
   return (
-    <Link
+    <TransitionLink
       href={data.loggedIn ? "/competitive/leagues" : "/auth/login"}
       className="group bg-[#111] border border-white/[0.12] p-6 sm:p-7 grid grid-rows-[auto_1fr_auto] gap-4 min-h-[220px] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors"
     >
@@ -254,7 +256,7 @@ function LeaguesTile({ data }: { data: CompetitiveData }) {
         <span>{meta}</span>
         <span className="text-white/42 text-[10px] tracking-[0.18em] uppercase">enter</span>
       </div>
-    </Link>
+    </TransitionLink>
   );
 }
 

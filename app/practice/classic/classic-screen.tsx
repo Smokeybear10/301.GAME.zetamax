@@ -7,6 +7,8 @@ import { useDrill } from "@/lib/use-drill";
 import { saveRun } from "@/lib/use-local-history";
 import { usePracticeConfig } from "@/lib/use-practice-config";
 import { ZpButton } from "@/components/ui/zp-button";
+import { AnimatedScore } from "@/app/_components/animated-score";
+import { AnimatedProblem } from "@/app/_components/animated-problem";
 import { MobileKeypad } from "./mobile-keypad";
 import { PostRoundSummary } from "./post-round-summary";
 import { SettingsModal } from "./settings-modal";
@@ -14,13 +16,6 @@ import { SettingsModal } from "./settings-modal";
 const DIGIT_KEYS = new Set([
   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
 ]);
-
-const OP_SYMBOL: Record<Problem["op"], string> = {
-  add: "+",
-  sub: "−",
-  mul: "×",
-  div: "÷",
-};
 
 // Spoken form for screen readers — paired with an aria-live region so the
 // current problem is announced semantically ("47 plus 38") instead of as raw
@@ -112,9 +107,10 @@ export function ClassicScreen() {
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
       {/* Top strip — score + timer, both faint when idle */}
       <header className="flex justify-between items-center px-8 pt-8 font-mono text-sm font-light tabular-nums">
-        <span className={state.status === "running" ? "text-white" : "text-white/42"}>
-          {state.score}
-        </span>
+        <AnimatedScore
+          value={state.score}
+          className={state.status === "running" ? "text-white" : "text-white/42"}
+        />
         <span className={state.status === "running" ? "text-white" : "text-white/42"}>
           {formatTime(state.msRemaining)}
         </span>
@@ -130,16 +126,13 @@ export function ClassicScreen() {
 
         {state.status === "running" && state.currentProblem && (
           <>
-            <div
-              aria-hidden="true"
-              className="font-extralight tracking-[-0.05em] leading-none text-[clamp(72px,15vw,200px)] whitespace-nowrap"
-            >
-              {state.currentProblem.a}
-              <span className="text-white/42 font-extralight mx-[0.18em]">
-                {OP_SYMBOL[state.currentProblem.op]}
-              </span>
-              {state.currentProblem.b}
-            </div>
+            <AnimatedProblem
+              a={state.currentProblem.a}
+              op={state.currentProblem.op}
+              b={state.currentProblem.b}
+              index={state.currentProblemIndex}
+              className="text-[clamp(72px,15vw,200px)]"
+            />
             {/* Screen-reader-only announcement of the current problem. The
                 visual block above is aria-hidden because raw glyphs (×, ÷, −)
                 read poorly. This re-renders on every problem change and the

@@ -7,18 +7,13 @@ import { useDrill } from "@/lib/use-drill";
 import { startRun } from "@/lib/runs-api";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
 import { ZpButton } from "@/components/ui/zp-button";
+import { AnimatedScore } from "@/app/_components/animated-score";
+import { AnimatedProblem } from "@/app/_components/animated-problem";
 import { RankedPostRound } from "./ranked-post-round";
 
 const DIGIT_KEYS = new Set([
   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
 ]);
-
-const OP_SYMBOL: Record<Problem["op"], string> = {
-  add: "+",
-  sub: "−",
-  mul: "×",
-  div: "÷",
-};
 
 const OP_WORD: Record<Problem["op"], string> = {
   add: "plus",
@@ -153,14 +148,16 @@ export function RankedScreen() {
   const showMenuChip = state.status !== "running";
 
   return (
-    <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
+    <main
+      className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased"
+      style={{ viewTransitionName: "ranked-hero" } as React.CSSProperties}
+    >
       {/* Top strip — score · "ranked" label · timer */}
       <header className="grid grid-cols-3 items-center px-8 pt-8 font-mono text-sm font-light tabular-nums">
-        <span
-          className={`${state.status === "running" ? "text-white" : "text-white/42"} text-left`}
-        >
-          {state.score}
-        </span>
+        <AnimatedScore
+          value={state.score}
+          className={`${state.status === "running" ? "text-white" : "text-white/42"} justify-self-start`}
+        />
         <span className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 text-center">
           ranked
         </span>
@@ -190,16 +187,13 @@ export function RankedScreen() {
           state.status === "running" &&
           state.currentProblem && (
             <>
-              <div
-                aria-hidden="true"
-                className="font-extralight tracking-[-0.05em] leading-none text-[clamp(72px,15vw,200px)] whitespace-nowrap"
-              >
-                {state.currentProblem.a}
-                <span className="text-white/42 font-extralight mx-[0.18em]">
-                  {OP_SYMBOL[state.currentProblem.op]}
-                </span>
-                {state.currentProblem.b}
-              </div>
+              <AnimatedProblem
+                a={state.currentProblem.a}
+                op={state.currentProblem.op}
+                b={state.currentProblem.b}
+                index={state.currentProblemIndex}
+                className="text-[clamp(72px,15vw,200px)]"
+              />
               <div className="sr-only" aria-live="polite" role="status">
                 {state.currentProblem.a} {OP_WORD[state.currentProblem.op]}{" "}
                 {state.currentProblem.b}

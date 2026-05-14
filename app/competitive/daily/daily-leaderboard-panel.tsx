@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { ZpButton } from "@/components/ui/zp-button";
 
@@ -176,42 +177,49 @@ export function DailyLeaderboardPanel() {
         </p>
       ) : (
         <div className="border-t border-b border-white/10 divide-y divide-white/10">
-          {rows.map((r, i) => {
-            const isYou = r.user_id === viewerId;
-            return (
-              <div
-                key={r.user_id}
-                className={`flex items-center gap-3 px-3 py-2 ${
-                  isYou
-                    ? "bg-white/[0.06] border-l-2 border-white -ml-[2px]"
-                    : "border-l-2 border-transparent -ml-[2px]"
-                }`}
-              >
-                <span className="font-mono tabular-nums text-white/42 w-6 text-right">
-                  {i + 1}
-                </span>
-                <span
-                  className={`flex-1 truncate ${
-                    isYou ? "text-white" : "text-white/85"
+          <AnimatePresence initial={false}>
+            {rows.map((r, i) => {
+              const isYou = r.user_id === viewerId;
+              return (
+                <motion.div
+                  key={r.user_id}
+                  layout
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                  className={`flex items-center gap-3 px-3 py-2 ${
+                    isYou
+                      ? "bg-white/[0.06] border-l-2 border-white -ml-[2px]"
+                      : "border-l-2 border-transparent -ml-[2px]"
                   }`}
                 >
-                  {isYou ? "You" : r.display_name ?? "Player"}
-                </span>
-                <span
-                  className="font-mono tabular-nums text-white/42 text-[10px]"
-                  title="Daily runs completed in last 30 days"
-                >
-                  {r.runs_completed}
-                </span>
-                <span
-                  className="font-mono tabular-nums text-white"
-                  title="Mean time over completed daily runs"
-                >
-                  {r.runs_completed > 0 ? formatTime(r.mean_duration_ms) : "—"}
-                </span>
-              </div>
-            );
-          })}
+                  <motion.span layout="position" className="font-mono tabular-nums text-white/42 w-6 text-right">
+                    {i + 1}
+                  </motion.span>
+                  <span
+                    className={`flex-1 truncate ${
+                      isYou ? "text-white" : "text-white/85"
+                    }`}
+                  >
+                    {isYou ? "You" : r.display_name ?? "Player"}
+                  </span>
+                  <span
+                    className="font-mono tabular-nums text-white/42 text-[10px]"
+                    title="Daily runs completed in last 30 days"
+                  >
+                    {r.runs_completed}
+                  </span>
+                  <span
+                    className="font-mono tabular-nums text-white"
+                    title="Mean time over completed daily runs"
+                  >
+                    {r.runs_completed > 0 ? formatTime(r.mean_duration_ms) : "—"}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
 
