@@ -1,70 +1,488 @@
 import Link from "next/link";
-import { ZpButton } from "@/components/ui/zp-button";
+import { createClient } from "@/lib/supabase/server";
+import { YourDay } from "./home/your-day";
+import { Heatmap } from "./home/heatmap";
+import { Focus } from "./home/focus";
+import { KeyboardShortcuts } from "./home/keyboard-shortcuts";
 
 export const metadata = {
   title: "zetamax — timed mental math drill",
 };
 
-export default function Home() {
+type LastRanked = {
+  score: number;
+  completedAt: string;
+  ratingDelta: number | null;
+  newRating: number | null;
+};
+
+type LeaderboardRow = {
+  user_id: string;
+  display_name: string | null;
+  rating: number;
+  is_provisional: boolean;
+  best_score: number;
+};
+
+type MyLeague = {
+  slug: string;
+  name: string;
+  member_count: number;
+};
+
+type HomeData = {
+  user: { id: string; displayName: string } | null;
+  lastRanked: LastRanked | null;
+  league: { slug: string; name: string } | null;
+  leagueRows: LeaderboardRow[];
+  leagueCount: number;
+  dailyResetIn: string;
+  dailyResetHM: { h: number; m: number };
+};
+
+async function loadHomeData(): Promise<HomeData> {
+  const supabase = await createClient();
+  const dailyResetHM = computeDailyResetET();
+  const dailyResetIn = formatHM(dailyResetHM);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      user: null,
+      lastRanked: null,
+      league: null,
+      leagueRows: [],
+      leagueCount: 0,
+      dailyResetIn,
+      dailyResetHM,
+    };
+  }
+
+  const displayName =
+    (user.user_metadata?.display_name as string | undefined) ??
+    (user.user_metadata?.name as string | undefined) ??
+    (user.email ?? "you").split("@")[0];
+
+  const [lastRunRes, ratingEventRes, leaguesRes] = await Promise.all([
+    supabase
+      .from("runs")
+      .select("score, completed_at")
+      .eq("user_id", user.id)
+      .eq("mode", "ranked")
+      .eq("validation_status", "ok")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("rating_events")
+      .select("after_rating, before_rating, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.rpc("get_my_leagues"),
+  ]);
+
+  const myLeagues = (leaguesRes.data ?? []) as MyLeague[];
+  const primaryLeague = myLeagues[0]
+    ? { slug: myLeagues[0].slug, name: myLeagues[0].name }
+    : null;
+
+  let leagueRows: LeaderboardRow[] = [];
+  if (primaryLeague) {
+    const lbRes = await supabase.rpc("get_league_leaderboard", {
+      league_slug: primaryLeague.slug,
+    });
+    leagueRows = ((lbRes.data ?? []) as LeaderboardRow[]).slice(0, 5);
+  }
+
+  const ratingEvent = ratingEventRes.data;
+  const lastRun = lastRunRes.data;
+  const lastRanked: LastRanked | null = lastRun
+    ? {
+        score: lastRun.score ?? 0,
+        completedAt: lastRun.completed_at,
+        ratingDelta:
+          ratingEvent && ratingEvent.after_rating != null && ratingEvent.before_rating != null
+            ? ratingEvent.after_rating - ratingEvent.before_rating
+            : null,
+        newRating: ratingEvent?.after_rating ?? null,
+      }
+    : null;
+
+  return {
+    user: { id: user.id, displayName },
+    lastRanked,
+    league: primaryLeague,
+    leagueRows,
+    leagueCount: myLeagues.length,
+    dailyResetIn,
+    dailyResetHM,
+  };
+}
+
+function computeDailyResetET(): { h: number; m: number } {
+  const now = new Date();
+  const etNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/New_York" }),
+  );
+  const etMidnight = new Date(etNow);
+  etMidnight.setHours(24, 0, 0, 0);
+  const ms = etMidnight.getTime() - etNow.getTime();
+  const totalMin = Math.max(0, Math.floor(ms / 60_000));
+  return { h: Math.floor(totalMin / 60), m: totalMin % 60 };
+}
+
+function formatHM({ h, m }: { h: number; m: number }): string {
+  const mm = String(m).padStart(2, "0");
+  return `${h}h ${mm}m`;
+}
+
+function formatLongDate(): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(new Date());
+}
+
+function formatAgo(iso: string): string {
+  const then = new Date(iso).getTime();
+  const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  return `${d}d ago`;
+}
+
+export default async function Home() {
+  const data = await loadHomeData();
+
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6 select-none antialiased">
-      {/* wordmark */}
-      <div className="text-center mb-3">
-        <h1 className="font-sans tracking-[-0.04em] leading-none text-[clamp(40px,6vw,88px)]">
-          <span className="font-extralight">zeta</span>
-          <span className="font-black">max</span>
-        </h1>
+    <main className="min-h-screen bg-[#0c0c0c] text-white antialiased">
+      <div className="max-w-[1180px] mx-auto p-5">
+        <Head data={data} />
+
+        <section className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-4 mb-4">
+          <PlayRanked lastRanked={data.lastRanked} loggedIn={!!data.user} />
+          <div className="flex flex-col gap-4">
+            <YourDay />
+            <LeaguePanel
+              league={data.league}
+              rows={data.leagueRows}
+              userId={data.user?.id ?? null}
+              loggedIn={!!data.user}
+            />
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <ModeTile
+            href="/practice"
+            badge="NO SIGN-IN"
+            name="Practice"
+            sub={<>local-only · nothing leaves your device</>}
+            cta="drill →"
+          />
+          <ModeTile
+            href="/competitive/daily"
+            badge={`1 SHOT · ${data.dailyResetIn} LEFT`}
+            name="Daily"
+            sub={<>today&apos;s puzzle · 30-day mean ranks</>}
+            cta="play →"
+          />
+          <ModeTile
+            href="/competitive/leagues"
+            badge={data.leagueCount > 0 ? `${data.leagueCount} ACTIVE` : "NONE YET"}
+            name="Leagues"
+            sub={
+              data.leagueCount > 0 && data.league ? (
+                <>
+                  <span className="text-white">{data.league.name}</span>
+                  {data.leagueCount > 1 ? ` · +${data.leagueCount - 1} more` : ""}
+                </>
+              ) : (
+                <>data insufficient · join by link</>
+              )
+            }
+            cta="enter →"
+          />
+          <ModeTile
+            href="/me"
+            badge="STATS · 30D"
+            name="Me"
+            sub={<>trend · accuracy · heatmap · focus</>}
+            cta="view →"
+          />
+        </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr] gap-4 mb-4">
+          <Heatmap />
+          <Focus />
+        </section>
+
+        <StatusBar />
       </div>
+      <KeyboardShortcuts />
+    </main>
+  );
+}
 
-      {/* deck */}
-      <p className="text-white/65 font-light text-center max-w-[32ch] leading-relaxed mb-20">
-        A timed mental-arithmetic drill.
-      </p>
-
-      {/* picker */}
-      <div className="flex flex-col sm:flex-row gap-8 sm:gap-12 md:gap-16 items-center sm:items-stretch">
-        <Link
-          href="/practice"
-          className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
-        >
-          <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">01</div>
-          <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 mb-2 transition-colors group-hover:border-white">
-            Practice
-          </div>
-          <div className="text-xs text-white/42">no sign-in</div>
-        </Link>
-
-        <div className="hidden sm:block w-px bg-white/10 self-stretch" aria-hidden="true" />
-
-        <Link
-          href="/competitive"
-          className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
-        >
-          <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">02</div>
-          <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 mb-2 transition-colors group-hover:border-white">
-            Competitive
-          </div>
-          <div className="text-xs text-white/42">with friends</div>
-        </Link>
-
-        <div className="hidden sm:block w-px bg-white/10 self-stretch" aria-hidden="true" />
-
+function Head({ data }: { data: HomeData }) {
+  return (
+    <header className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
+      <Link href="/" className="font-sans text-[22px] leading-none tracking-[-0.04em] text-white">
+        <span className="font-extralight">zeta</span>
+        <span className="font-black">max</span>
+      </Link>
+      <span className="text-[11px] text-white/55 tracking-[0.04em] hidden sm:block font-mono">
+        {formatLongDate()} · <span className="text-white">drill window open</span> · daily resets in {data.dailyResetIn}
+      </span>
+      <HeadLink href="/about" className="hidden sm:inline-flex">about</HeadLink>
+      <HeadLink href="/practice" className="hidden md:inline-flex">practice</HeadLink>
+      <HeadLink href="/competitive" className="hidden md:inline-flex">compete</HeadLink>
+      {data.user ? (
         <Link
           href="/me"
-          className="group block py-2 transition-opacity hover:opacity-100 focus:outline-none focus-visible:opacity-100"
+          className="flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-white border border-white/[0.12] px-3.5 py-1.5 hover:border-white/[0.28] transition-colors font-mono"
         >
-          <div className="font-mono text-[11px] tracking-[0.1em] text-white/42 mb-1">03</div>
-          <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 mb-2 transition-colors group-hover:border-white">
-            Profile
-          </div>
-          <div className="text-xs text-white/42">elo + stats</div>
+          <span className="block w-1.5 h-1.5 bg-white rounded-full" aria-hidden />
+          {data.user.displayName}
         </Link>
+      ) : (
+        <Link
+          href="/auth/login"
+          className="flex items-center gap-2 text-[11px] tracking-[0.18em] uppercase text-white/85 border border-white/[0.12] px-3.5 py-1.5 hover:border-white/[0.28] hover:text-white transition-colors font-mono"
+        >
+          sign in
+        </Link>
+      )}
+    </header>
+  );
+}
+
+function HeadLink({
+  href,
+  children,
+  className = "",
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        "text-[11px] tracking-[0.18em] uppercase text-white/55 px-2.5 py-1.5 border border-transparent hover:text-white hover:border-white/[0.12] transition-colors font-mono " +
+        className
+      }
+    >
+      {children}
+    </Link>
+  );
+}
+
+function PlayRanked({
+  lastRanked,
+  loggedIn,
+}: {
+  lastRanked: LastRanked | null;
+  loggedIn: boolean;
+}) {
+  const meta = !loggedIn
+    ? "sign in to play ranked"
+    : lastRanked
+      ? `last ranked: ${lastRanked.score} · ${formatAgo(lastRanked.completedAt)}${
+          lastRanked.ratingDelta != null
+            ? ` · ${lastRanked.ratingDelta >= 0 ? "↑" : "↓"}${Math.abs(lastRanked.ratingDelta)}`
+            : ""
+        }${lastRanked.newRating != null ? ` · ELO ${lastRanked.newRating}` : ""}`
+      : "data insufficient · no ranked rounds yet";
+
+  return (
+    <Link
+      href={loggedIn ? "/competitive/ranked" : "/auth/login"}
+      className="group bg-white text-black p-7 sm:p-8 grid grid-rows-[auto_1fr_auto] gap-[18px] min-h-[220px] hover:opacity-95 transition-opacity"
+    >
+      <div className="flex justify-between items-baseline text-[10.5px] tracking-[0.24em] uppercase text-black/50 font-mono">
+        <span>RANKED · 120s · ELO</span>
+        <span>↩ enter to start</span>
+      </div>
+      <h1 className="font-sans font-extralight text-[clamp(46px,6.5vw,88px)] tracking-[-0.045em] leading-[0.94] text-black">
+        play <span className="text-black/45">ranked</span>
+        <br />
+        round →
+      </h1>
+      <div className="flex justify-between items-baseline text-[11px] tracking-[0.04em] text-black/55 font-mono gap-4 flex-wrap">
+        <span>{meta}</span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="border border-black/15 px-1.5 py-0.5 text-[10.5px] tracking-[0.08em] text-black">↩</span>
+          start
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function LeaguePanel({
+  league,
+  rows,
+  userId,
+  loggedIn,
+}: {
+  league: { slug: string; name: string } | null;
+  rows: LeaderboardRow[];
+  userId: string | null;
+  loggedIn: boolean;
+}) {
+  return (
+    <div className="bg-[#111] border border-white/[0.12] p-[18px]">
+      <div className="flex justify-between items-baseline text-[10px] tracking-[0.24em] uppercase text-white/55 mb-3 pb-2 border-b border-white/[0.08] font-mono">
+        <span>
+          <span className="text-white">league</span>{" "}
+          {league ? `· ${league.name.toLowerCase()}` : ""}
+        </span>
+        <span>{rows.length > 0 ? `top ${Math.min(rows.length, 5)}` : "—"}</span>
       </div>
 
-      {/* about — pinned to the bottom, lights up on hover */}
-      <ZpButton asChild variant="chip" className="absolute bottom-6 px-7 tracking-[0.28em]">
-        <Link href="/about">about</Link>
-      </ZpButton>
-    </main>
+      {!loggedIn ? (
+        <div className="py-2">
+          <p className="font-mono text-[11px] text-white/42 mb-3">
+            data insufficient · sign in to see league leaderboards
+          </p>
+          <Link
+            href="/auth/login"
+            className="inline-flex items-center font-mono text-[10px] tracking-[0.24em] uppercase text-white border border-white/[0.12] hover:border-white/[0.28] px-3 py-1.5 transition-colors"
+          >
+            sign in →
+          </Link>
+        </div>
+      ) : !league ? (
+        <div className="py-2">
+          <p className="font-mono text-[11px] text-white/42 mb-3">
+            data insufficient · no leagues yet
+          </p>
+          <Link
+            href="/competitive/leagues"
+            className="inline-flex items-center font-mono text-[10px] tracking-[0.24em] uppercase text-white border border-white/[0.12] hover:border-white/[0.28] px-3 py-1.5 transition-colors"
+          >
+            join a league →
+          </Link>
+        </div>
+      ) : rows.length === 0 ? (
+        <p className="font-mono text-[11px] text-white/42 py-3">
+          data insufficient · no qualifying runs in this league yet
+        </p>
+      ) : (
+        <ol>
+          {rows.map((r, i) => {
+            const isMe = r.user_id === userId;
+            const last = i === rows.length - 1;
+            return (
+              <li
+                key={r.user_id}
+                className={
+                  "grid grid-cols-[18px_1fr_auto_auto] gap-3 items-baseline py-1.5 text-[13px] font-mono " +
+                  (last ? "" : "border-b border-white/[0.08] ") +
+                  (isMe ? "-mx-[18px] px-[18px] bg-white/[0.04]" : "")
+                }
+              >
+                <span className={"text-[11px] " + (isMe ? "" : "text-white/55")}>
+                  {isMe && (
+                    <span className="text-white text-[9px] mr-0.5">▶</span>
+                  )}
+                  {i + 1}
+                </span>
+                <span
+                  className={
+                    "font-sans text-[13px] truncate " +
+                    (isMe ? "text-white font-medium" : "text-white/85")
+                  }
+                >
+                  {isMe ? "You" : r.display_name ?? "Player"}
+                </span>
+                <span className="text-[11px] text-white/42" title="best in last 30 days">
+                  {r.best_score}
+                </span>
+                <span
+                  className="text-[14px] tabular-nums font-medium text-white"
+                  title="ELO"
+                >
+                  {r.rating}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function ModeTile({
+  href,
+  badge,
+  name,
+  sub,
+  cta,
+}: {
+  href: string;
+  badge: string;
+  name: string;
+  sub: React.ReactNode;
+  cta: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group bg-[#111] border border-white/[0.12] p-[18px] pb-4 flex flex-col justify-between min-h-[130px] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors"
+    >
+      <div className="flex justify-end text-[10px] tracking-[0.24em] uppercase text-white/42 font-mono">
+        <span className="truncate">{badge}</span>
+      </div>
+      <div>
+        <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white mt-1.5">
+          {name}
+        </div>
+        <div className="text-[11.5px] text-white/55 mt-2.5 font-mono">{sub}</div>
+      </div>
+      <div className="text-[11px] text-white/42 group-hover:text-white transition-colors mt-2.5 font-mono">
+        {cta}
+      </div>
+    </Link>
+  );
+}
+
+function StatusBar() {
+  return (
+    <footer className="bg-[#111] border border-white/[0.12] px-[18px] py-2.5 flex justify-between items-center text-[10.5px] tracking-[0.18em] uppercase text-white/55 font-mono">
+      <div className="flex gap-4 sm:gap-[18px] flex-wrap">
+        <Hint k="↩" label="start" />
+        <Hint k="P" label="practice" />
+        <Hint k="D" label="daily" />
+        <Hint k="M" label="me" />
+        <Hint k="A" label="about" />
+      </div>
+      <div className="text-white">v1 · {new Date().toISOString().slice(0, 10)}</div>
+    </footer>
+  );
+}
+
+function Hint({ k, label }: { k: string; label: string }) {
+  return (
+    <span className="inline-flex items-baseline">
+      <span className="bg-white/[0.06] border border-white/[0.12] text-white px-1.5 mr-1.5 text-[10px]">
+        {k}
+      </span>
+      {label}
+    </span>
   );
 }
