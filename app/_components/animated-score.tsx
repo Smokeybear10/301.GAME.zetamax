@@ -36,14 +36,14 @@ function AnimatedDigit({ digit, visible }: { digit: number; visible: boolean }) 
   return (
     <span
       aria-hidden={!visible || undefined}
-      className="relative inline-block overflow-hidden h-[1em] motion-safe:transition-[width,opacity] motion-safe:duration-[240ms] motion-safe:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+      className="relative inline-block overflow-hidden h-[1em] motion-safe:transition-[width,opacity] motion-safe:duration-[120ms] motion-safe:ease-out"
       style={{
         width: visible ? "1ch" : "0ch",
         opacity: visible ? 1 : 0,
       }}
     >
       <span
-        className="absolute inset-0 flex flex-col will-change-transform motion-safe:transition-transform motion-safe:duration-[300ms] motion-safe:[transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
+        className="absolute inset-0 flex flex-col will-change-transform motion-safe:transition-transform motion-safe:duration-[140ms] motion-safe:ease-out"
         style={{ transform: `translateY(-${digit}em)` }}
       >
         {DIGITS.map((d) => (
