@@ -33,12 +33,18 @@ type MyLeague = {
   member_count: number;
 };
 
+type RaceTarget = {
+  runId: string;
+  opponentName: string;
+};
+
 type HomeData = {
   user: { id: string; displayName: string } | null;
   lastRanked: LastRanked | null;
   league: { slug: string; name: string } | null;
   leagueRows: LeaderboardRow[];
   leagueCount: number;
+  raceTarget: RaceTarget | null;
   dailyResetIn: string;
   dailyResetHM: { h: number; m: number };
 };
@@ -59,6 +65,7 @@ async function loadHomeData(): Promise<HomeData> {
       league: null,
       leagueRows: [],
       leagueCount: 0,
+      raceTarget: null,
       dailyResetIn,
       dailyResetHM,
     };
@@ -102,6 +109,31 @@ async function loadHomeData(): Promise<HomeData> {
     leagueRows = ((lbRes.data ?? []) as LeaderboardRow[]).slice(0, 5);
   }
 
+  // Pick the top non-self league member as the race target, then resolve
+  // their most recent validated ranked run with at least one event.
+  let raceTarget: RaceTarget | null = null;
+  const topOpponent = leagueRows.find((r) => r.user_id !== user.id);
+  if (topOpponent) {
+    const { data: opponentRun } = await supabase
+      .from("runs")
+      .select("id, client_payload")
+      .eq("user_id", topOpponent.user_id)
+      .eq("mode", "ranked")
+      .eq("validation_status", "ok")
+      .order("completed_at", { ascending: false })
+      .limit(5);
+    const ridable = (opponentRun ?? []).find((r) => {
+      const events = (r.client_payload as { events?: unknown[] } | null)?.events;
+      return Array.isArray(events) && events.length > 0;
+    });
+    if (ridable) {
+      raceTarget = {
+        runId: ridable.id as string,
+        opponentName: topOpponent.display_name ?? "opponent",
+      };
+    }
+  }
+
   const ratingEvent = ratingEventRes.data;
   const lastRun = lastRunRes.data;
   const lastRanked: LastRanked | null = lastRun
@@ -122,6 +154,7 @@ async function loadHomeData(): Promise<HomeData> {
     league: primaryLeague,
     leagueRows,
     leagueCount: myLeagues.length,
+    raceTarget,
     dailyResetIn,
     dailyResetHM,
   };
@@ -173,6 +206,7 @@ export default async function Home() {
               rows={data.leagueRows}
               userId={data.user?.id ?? null}
               loggedIn={!!data.user}
+              raceTarget={data.raceTarget}
             />
           </div>
         </section>
@@ -278,13 +312,15 @@ function LeaguePanel({
   rows,
   userId,
   loggedIn,
+  raceTarget,
 }: {
   league: { slug: string; name: string } | null;
   rows: LeaderboardRow[];
   userId: string | null;
   loggedIn: boolean;
+  raceTarget: RaceTarget | null;
 }) {
-  const clickable = loggedIn && !!league;
+  const clickable = loggedIn && !!raceTarget;
   const containerClass = clickable
     ? "group block bg-[#111] border border-white/[0.12] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors p-[18px]"
     : "bg-[#111] border border-white/[0.12] p-[18px]";
@@ -295,9 +331,9 @@ function LeaguePanel({
           <span className="text-white">league</span>{" "}
           {league ? `· ${league.name.toLowerCase()}` : ""}
         </span>
-        <span className={clickable ? "group-hover:text-white transition-colors" : ""}>
+        <span className={clickable ? "text-white group-hover:text-white transition-colors" : ""}>
           {clickable
-            ? "open →"
+            ? `race ${raceTarget.opponentName.toLowerCase()} →`
             : rows.length > 0
               ? `top ${Math.min(rows.length, 5)}`
               : "—"}
@@ -377,9 +413,12 @@ function LeaguePanel({
     </>
   );
 
-  if (clickable) {
+  if (clickable && raceTarget) {
     return (
-      <TransitionLink href={`/competitive/leagues/${league.slug}`} className={containerClass}>
+      <TransitionLink
+        href={`/competitive/race/${raceTarget.runId}`}
+        className={containerClass}
+      >
         {body}
       </TransitionLink>
     );
