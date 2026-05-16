@@ -9,7 +9,7 @@ import { Heatmap } from "./home/heatmap";
 import { Focus } from "./home/focus";
 
 export const metadata = {
-  title: "zetamax — timed mental math drill",
+  title: "ZETAMAX | timed mental math drill",
 };
 
 type LastRanked = {

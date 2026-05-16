@@ -205,7 +205,7 @@ function BackLink() {
         <Link href="/competitive/daily">Back to daily</Link>
       </ZpButton>
       <ZpButton asChild variant="secondary">
-        <Link href="/competitive">Modes</Link>
+        <Link href="/">Home</Link>
       </ZpButton>
     </div>
   );

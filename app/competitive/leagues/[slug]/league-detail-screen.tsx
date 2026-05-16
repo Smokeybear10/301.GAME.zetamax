@@ -28,7 +28,7 @@ type LeaderboardRow = {
 type Phase =
   | { tag: "loading" }
   | { tag: "not-found" }
-  | { tag: "join"; preview: Preview }
+  | { tag: "join"; preview: Preview; signedIn: boolean }
   | { tag: "ready"; preview: Preview; rows: LeaderboardRow[]; viewerId: string };
 
 type Props = {
@@ -62,7 +62,7 @@ export function LeagueDetailScreen({ slug }: Props) {
     }
     const preview = previewRows[0];
     if (!preview.is_member) {
-      setPhase({ tag: "join", preview });
+      setPhase({ tag: "join", preview, signedIn: viewerId !== null });
       return;
     }
     if (!viewerId) {
@@ -139,7 +139,9 @@ export function LeagueDetailScreen({ slug }: Props) {
 
         {phase.tag === "join" && (
           <JoinPanel
+            slug={slug}
             preview={phase.preview}
+            signedIn={phase.signedIn}
             joining={joining}
             error={error}
             onJoin={handleJoin}
@@ -180,16 +182,21 @@ function NotFoundState() {
 }
 
 function JoinPanel({
+  slug,
   preview,
+  signedIn,
   joining,
   error,
   onJoin,
 }: {
+  slug: string;
   preview: Preview;
+  signedIn: boolean;
   joining: boolean;
   error: string | null;
   onJoin: () => void;
 }) {
+  const signInHref = `/auth/login?next=${encodeURIComponent(`/competitive/leagues/${slug}`)}`;
   return (
     <div className="text-center max-w-md mx-auto py-12 sm:py-20">
       <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 mb-3">
@@ -201,14 +208,22 @@ function JoinPanel({
       <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42 mb-12">
         {preview.member_count} {preview.member_count === 1 ? "member" : "members"}
       </p>
-      <ZpButton variant="primary" onClick={onJoin} disabled={joining}>
-        {joining ? "Joining…" : "Join league"}
-      </ZpButton>
+      {signedIn ? (
+        <ZpButton variant="primary" onClick={onJoin} disabled={joining}>
+          {joining ? "Joining…" : "Join league"}
+        </ZpButton>
+      ) : (
+        <ZpButton asChild variant="primary">
+          <Link href={signInHref}>Sign in to join →</Link>
+        </ZpButton>
+      )}
       {error && (
         <p className="font-mono text-[11px] text-white/65 mt-4">{error}</p>
       )}
       <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 mt-8">
-        your scores will appear on this league&apos;s board
+        {signedIn
+          ? "your scores will appear on this league's board"
+          : "you'll be added after sign-in · scores will appear on this league's board"}
       </p>
     </div>
   );

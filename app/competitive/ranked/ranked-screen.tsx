@@ -221,12 +221,12 @@ export function RankedScreen() {
       {showMenuChip && (
         <ZpButton asChild variant="floating">
           <Link
-            href="/competitive"
-            aria-label="Back to competitive modes"
-            title="Modes"
+            href="/"
+            aria-label="Back to home"
+            title="Home"
           >
             <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">modes</span>
+            <span className="hidden sm:inline">home</span>
           </Link>
         </ZpButton>
       )}
@@ -269,7 +269,7 @@ function ErrorState({ code }: { code: string }) {
       </p>
       <p className="text-white/75 mb-8 leading-relaxed">{copy}</p>
       <ZpButton asChild variant="chip">
-        <Link href="/competitive">back to modes</Link>
+        <Link href="/">back to home</Link>
       </ZpButton>
     </div>
   );

@@ -99,7 +99,7 @@ export function ClassicScreen() {
     if (result.problemsAttempted > 0) {
       saveRun("classic", seed, config.generator, result, config.durationMs);
     }
-  }, [state.status, drill, seed, config.generator]);
+  }, [state.status, drill, seed, config.generator, config.durationMs]);
 
   const settingsAccessible = state.status !== "running";
 

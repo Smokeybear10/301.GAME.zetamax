@@ -3,7 +3,7 @@ import { DailyDrillScreen } from "./daily-drill-screen";
 import { InvalidDateScreen } from "./invalid-date-screen";
 
 export const metadata = {
-  title: "Daily — Zetamax",
+  title: "ZETAMAX | Daily",
 };
 
 export default async function DailyDatePage({

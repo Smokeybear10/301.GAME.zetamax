@@ -1,7 +1,7 @@
 import { LearnScreen } from "./learn-screen";
 
 export const metadata = {
-  title: "Learn — Zetamax",
+  title: "ZETAMAX | Learn",
 };
 
 export default function LearnPage() {

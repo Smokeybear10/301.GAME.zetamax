@@ -1,7 +1,7 @@
 import { MeScreen } from "./me-screen";
 
 export const metadata = {
-  title: "My Profile — Zetamax",
+  title: "ZETAMAX | Profile",
 };
 
 export default function MePage() {

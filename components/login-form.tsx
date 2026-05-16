@@ -10,7 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+
+function safeNext(raw: string | null): string {
+  if (!raw) return "/";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  return raw;
+}
 
 export function LoginForm({
   className,
@@ -18,16 +25,17 @@ export function LoginForm({
 }: React.ComponentPropsWithoutRef<"div">) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const next = safeNext(searchParams.get("next"));
 
   const handleGoogle = async () => {
     setIsLoading(true);
     setError(null);
     const supabase = createClient();
+    const callback = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/competitive`,
-      },
+      options: { redirectTo: callback },
     });
     if (error) {
       setError(error.message);
@@ -63,7 +71,7 @@ export function LoginForm({
             <p className="text-xs text-muted-foreground text-center">
               Practice mode doesn&apos;t need an account —{" "}
               <a
-                href="/practice"
+                href="/practice/classic"
                 className="underline underline-offset-4 hover:text-foreground"
               >
                 drill without signing in

@@ -68,7 +68,7 @@ export function LeaguesScreen() {
   return (
     <main className="min-h-screen bg-black text-white antialiased">
       <ZpButton asChild variant="chip" className="absolute top-6 left-6">
-        <Link href="/competitive" aria-label="Back to competitive modes">← modes</Link>
+        <Link href="/" aria-label="Back to home">← home</Link>
       </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">

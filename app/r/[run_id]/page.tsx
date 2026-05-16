@@ -63,7 +63,7 @@ export async function generateMetadata({
 
   if (!meta) {
     return {
-      title: "Replay — Zetamax",
+      title: "ZETAMAX | Replay",
       description: "Two minutes. Mental arithmetic. Open and drill.",
     };
   }
@@ -76,7 +76,7 @@ export async function generateMetadata({
 
   const headline = meta.mode === "daily"
     ? `${meta.displayName} finished ${modeLabel} in ${formatDuration(meta.durationMs)}`
-    : `${meta.displayName} scored ${meta.score} on Zetamax ${modeLabel}`;
+    : `${meta.displayName} scored ${meta.score} on ${modeLabel}`;
 
   const accuracy = meta.attempted > 0
     ? `${Math.round((meta.correct / meta.attempted) * 100)}% accuracy`
@@ -90,16 +90,16 @@ export async function generateMetadata({
     .join(" · ");
 
   return {
-    title: `${headline} — Zetamax`,
+    title: `ZETAMAX | ${headline}`,
     description: desc,
     openGraph: {
-      title: headline,
+      title: `ZETAMAX | ${headline}`,
       description: desc,
       type: "article",
     },
     twitter: {
       card: "summary_large_image",
-      title: headline,
+      title: `ZETAMAX | ${headline}`,
       description: desc,
     },
   };

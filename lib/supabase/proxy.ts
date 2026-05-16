@@ -62,6 +62,10 @@ export async function updateSession(request: NextRequest) {
     path.endsWith("/opengraph-image") ||
     path.endsWith("/twitter-image") ||
     /\/(opengraph-image|twitter-image)\.[a-z0-9]+$/.test(path);
+  // League detail pages are public so shared invite links render a preview
+  // before sign-in. The join API still requires auth, so a logged-out
+  // visitor can read the page but can't accidentally join.
+  const isLeagueInvite = /^\/competitive\/leagues\/[^/]+\/?$/.test(path);
   const isPublicRoute =
     path === "/" ||
     path === "/about" ||
@@ -70,11 +74,14 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/login") ||
     path.startsWith("/auth") ||
     path.startsWith("/api") ||
+    isLeagueInvite ||
     isOgRoute;
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    const nextPath = request.nextUrl.pathname + request.nextUrl.search;
+    url.search = `?next=${encodeURIComponent(nextPath)}`;
     return NextResponse.redirect(url);
   }
 
