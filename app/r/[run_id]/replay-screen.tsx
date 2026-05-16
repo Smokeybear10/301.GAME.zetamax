@@ -236,7 +236,7 @@ export function ReplayScreen({ runId }: { runId: string }) {
         <Timeline events={events} totalMs={totalMs} elapsedMs={elapsedMs} />
       </div>
 
-      <div className="flex items-center justify-center gap-3 pb-8 pt-3">
+      <div className="flex items-center justify-center gap-3 pb-3 pt-3">
         <ZpButton variant="primary" size="sm" onClick={onPlayPause}>
           {playing ? "Pause" : elapsedMs >= totalMs ? "Replay" : "Play"}
         </ZpButton>
@@ -244,6 +244,16 @@ export function ReplayScreen({ runId }: { runId: string }) {
           Restart
         </ZpButton>
       </div>
+      {run.mode === "ranked" && (
+        <div className="flex justify-center pb-8">
+          <Link
+            href={`/competitive/race/${run.id}`}
+            className="font-mono text-[10px] tracking-[0.24em] uppercase text-white/55 hover:text-white border border-white/[0.12] hover:border-white/[0.28] px-4 py-2 transition-colors"
+          >
+            race their ghost →
+          </Link>
+        </div>
+      )}
 
       <ZpButton asChild variant="floating">
         <Link href="/me" aria-label="Back to my profile">

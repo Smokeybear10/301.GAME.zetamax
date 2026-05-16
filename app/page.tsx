@@ -284,14 +284,24 @@ function LeaguePanel({
   userId: string | null;
   loggedIn: boolean;
 }) {
-  return (
-    <div className="bg-[#111] border border-white/[0.12] p-[18px]">
+  const clickable = loggedIn && !!league;
+  const containerClass = clickable
+    ? "group block bg-[#111] border border-white/[0.12] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors p-[18px]"
+    : "bg-[#111] border border-white/[0.12] p-[18px]";
+  const body = (
+    <>
       <div className="flex justify-between items-baseline text-[10px] tracking-[0.24em] uppercase text-white/55 mb-3 pb-2 border-b border-white/[0.08] font-mono">
         <span>
           <span className="text-white">league</span>{" "}
           {league ? `· ${league.name.toLowerCase()}` : ""}
         </span>
-        <span>{rows.length > 0 ? `top ${Math.min(rows.length, 5)}` : "—"}</span>
+        <span className={clickable ? "group-hover:text-white transition-colors" : ""}>
+          {clickable
+            ? "open →"
+            : rows.length > 0
+              ? `top ${Math.min(rows.length, 5)}`
+              : "—"}
+        </span>
       </div>
 
       {!loggedIn ? (
@@ -364,8 +374,17 @@ function LeaguePanel({
           })}
         </ol>
       )}
-    </div>
+    </>
   );
+
+  if (clickable) {
+    return (
+      <TransitionLink href={`/competitive/leagues/${league.slug}`} className={containerClass}>
+        {body}
+      </TransitionLink>
+    );
+  }
+  return <div className={containerClass}>{body}</div>;
 }
 
 function ModeTile({
