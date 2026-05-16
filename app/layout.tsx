@@ -10,7 +10,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "zetamax — timed mental math drill",
+  title: "ZETAMAX | timed mental math drill",
   description:
     "Two minutes. Mental arithmetic. Open and drill, or sign in to play with friends.",
   manifest: "/manifest.webmanifest",

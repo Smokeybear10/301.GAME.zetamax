@@ -1,7 +1,7 @@
 import { LeaguesScreen } from "./leagues-screen";
 
 export const metadata = {
-  title: "Leagues — Zetamax",
+  title: "ZETAMAX | Leagues",
 };
 
 export default function LeaguesPage() {

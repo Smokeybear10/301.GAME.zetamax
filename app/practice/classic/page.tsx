@@ -1,7 +1,7 @@
 import { ClassicScreen } from "./classic-screen";
 
 export const metadata = {
-  title: "Classic Practice — Zetamax",
+  title: "ZETAMAX | Classic Practice",
 };
 
 export default function ClassicPage() {

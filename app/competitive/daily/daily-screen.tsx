@@ -41,7 +41,7 @@ const SHORT_MONTHS = [
 ];
 
 function formatLabel(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [, m, d] = iso.split("-").map(Number);
   return `${SHORT_MONTHS[m - 1]} ${d}`;
 }
 
@@ -115,7 +115,7 @@ export function DailyScreen() {
       style={{ viewTransitionName: "daily-hero" } as React.CSSProperties}
     >
       <ZpButton asChild variant="chip" className="absolute top-6 left-6">
-        <Link href="/competitive" aria-label="Back to competitive modes">← modes</Link>
+        <Link href="/" aria-label="Back to home">← home</Link>
       </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">

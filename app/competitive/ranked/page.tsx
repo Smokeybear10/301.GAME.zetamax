@@ -1,7 +1,7 @@
 import { RankedScreen } from "./ranked-screen";
 
 export const metadata = {
-  title: "Ranked — Zetamax",
+  title: "ZETAMAX | Ranked",
 };
 
 export default function RankedPage() {

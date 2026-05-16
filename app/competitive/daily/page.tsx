@@ -1,7 +1,7 @@
 import { DailyScreen } from "./daily-screen";
 
 export const metadata = {
-  title: "Daily — Zetamax",
+  title: "ZETAMAX | Daily",
 };
 
 export default function DailyPage() {

@@ -5,7 +5,7 @@ import { KeyboardShortcuts } from "@/app/_components/keyboard-shortcuts";
 import { TocRail } from "./toc-rail";
 
 export const metadata = {
-  title: "About — Zetamax",
+  title: "ZETAMAX | About",
 };
 
 const toc = [
@@ -222,15 +222,15 @@ export default function AboutPage() {
               </div>
             </Link>
             <Link
-              href="/competitive"
+              href="/competitive/ranked"
               className="group inline-block py-2 text-right"
-              aria-label="Go to competitive"
+              aria-label="Play ranked"
             >
               <div className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-1.5">
                 or
               </div>
               <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 transition-colors group-hover:border-white">
-                Compete →
+                Play ranked →
               </div>
             </Link>
           </footer>
