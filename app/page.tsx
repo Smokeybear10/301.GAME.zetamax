@@ -227,22 +227,31 @@ export default async function Home() {
             cta="play →"
             viewTransitionName="daily-hero"
           />
-          <ModeTile
-            href="/competitive/leagues"
-            badge={data.leagueCount > 0 ? `${data.leagueCount} ACTIVE` : "NONE YET"}
-            name="Leagues"
-            sub={
-              data.leagueCount > 0 && data.league ? (
-                <>
-                  <span className="text-white">{data.league.name}</span>
-                  {data.leagueCount > 1 ? ` · +${data.leagueCount - 1} more` : ""}
-                </>
-              ) : (
-                <>data insufficient · join by link</>
-              )
-            }
-            cta="enter →"
-          />
+          {data.raceTarget ? (
+            <ModeTile
+              href={`/competitive/race/${data.raceTarget.runId}`}
+              badge={`VS ${data.raceTarget.opponentName.toUpperCase()}`}
+              name="Race"
+              sub={<>same problem stream · their pace as ghost</>}
+              cta="race →"
+            />
+          ) : (
+            <ModeTile
+              href="/competitive/leagues"
+              badge={data.leagueCount > 0 ? `${data.leagueCount} ACTIVE` : "NONE YET"}
+              name="Race"
+              sub={
+                !data.user ? (
+                  <>sign in · race a friend&apos;s ghost</>
+                ) : data.leagueCount === 0 ? (
+                  <>join a league · race their top runs</>
+                ) : (
+                  <>no eligible runs in your league yet</>
+                )
+              }
+              cta={!data.user ? "sign in →" : "join a league →"}
+            />
+          )}
           <ModeTile
             href="/practice/learn"
             badge="AUTO-TARGET"
@@ -312,7 +321,6 @@ function LeaguePanel({
   rows,
   userId,
   loggedIn,
-  raceTarget,
 }: {
   league: { slug: string; name: string } | null;
   rows: LeaderboardRow[];
@@ -320,7 +328,7 @@ function LeaguePanel({
   loggedIn: boolean;
   raceTarget: RaceTarget | null;
 }) {
-  const clickable = loggedIn && !!raceTarget;
+  const clickable = loggedIn && !!league;
   const containerClass = clickable
     ? "group block bg-[#111] border border-white/[0.12] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors p-[18px]"
     : "bg-[#111] border border-white/[0.12] p-[18px]";
@@ -331,9 +339,9 @@ function LeaguePanel({
           <span className="text-white">league</span>{" "}
           {league ? `· ${league.name.toLowerCase()}` : ""}
         </span>
-        <span className={clickable ? "text-white group-hover:text-white transition-colors" : ""}>
+        <span className={clickable ? "group-hover:text-white transition-colors" : ""}>
           {clickable
-            ? `race ${raceTarget.opponentName.toLowerCase()} →`
+            ? "open →"
             : rows.length > 0
               ? `top ${Math.min(rows.length, 5)}`
               : "—"}
@@ -413,10 +421,10 @@ function LeaguePanel({
     </>
   );
 
-  if (clickable && raceTarget) {
+  if (clickable && league) {
     return (
       <TransitionLink
-        href={`/competitive/race/${raceTarget.runId}`}
+        href={`/competitive/leagues/${league.slug}`}
         className={containerClass}
       >
         {body}
