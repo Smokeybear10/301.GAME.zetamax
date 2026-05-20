@@ -95,20 +95,28 @@ export function MulFactGrid({ facts }: Props) {
                     opacity = 0.35 + (target - 0.35) * confidence;
                   }
 
+                  const product = a * b;
                   const title = fact
-                    ? `${a} × ${b} = ${a * b} — ${fmtLatencyShort(
+                    ? `${a} × ${b} = ${product} — ${fmtLatencyShort(
                         fact.meanLatencyMs,
                       )}, ${Math.round(fact.accuracy * 100)}% over ${n}`
-                    : `${a} × ${b} — no data yet`;
+                    : `${a} × ${b} = ${product} — no data yet`;
 
-                  const showCount = n >= 1 && n < FULL_CONFIDENCE_N;
+                  // Brighter ramp → darker text for legibility; faded for
+                  // untouched cells so they read as "still to be filled in".
+                  const textClass =
+                    n === 0
+                      ? "text-white/25"
+                      : opacity > 0.6
+                        ? "text-black/80"
+                        : "text-white/85";
 
                   return (
                     <td key={`${a}-${b}`} className="p-0">
                       <div
                         title={title}
                         aria-label={title}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center font-mono text-[9px] tabular-nums motion-safe:transition-[background-color] motion-safe:duration-300 ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center font-mono text-[10px] tabular-nums motion-safe:transition-[background-color] motion-safe:duration-300 ${textClass} ${
                           n === 0 ? "border border-white/[0.06]" : ""
                         }`}
                         style={{
@@ -118,9 +126,7 @@ export function MulFactGrid({ facts }: Props) {
                               : `rgba(255,255,255,${opacity})`,
                         }}
                       >
-                        {showCount ? (
-                          <span className="text-white/65">{n}</span>
-                        ) : null}
+                        {product}
                       </div>
                     </td>
                   );
