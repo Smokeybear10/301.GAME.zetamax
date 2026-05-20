@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   findFocusTag,
   summarizeTags,
@@ -9,20 +9,6 @@ import {
 } from "@/lib/practice-stats";
 import { labelFor } from "./todays-focus";
 
-const FILTER_KEY = "zetamax:patterns-filter";
-
-const FILTERS: ModeFilter[] = ["all", "classic", "ranked", "daily"];
-const FILTER_LABEL: Record<ModeFilter, string> = {
-  all: "All",
-  classic: "Classic",
-  ranked: "Ranked",
-  daily: "Daily",
-};
-
-function isModeFilter(s: string): s is ModeFilter {
-  return (FILTERS as string[]).includes(s);
-}
-
 function fmtLatency(ms: number): string {
   if (ms <= 0) return "—";
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -30,35 +16,17 @@ function fmtLatency(ms: number): string {
 }
 
 /**
- * Diagnostic table for the /me Stats tab. Mode filter chip persists in
- * localStorage. Featured "Today's focus" at the top mirrors what the
- * post-round card shows; full sortable list below for users who want to
- * see all their pattern stats.
+ * Pattern diagnostic table. The mode filter is owned by the parent Stats
+ * tab so every section reads the same lens — see stats-section.tsx for the
+ * chip row and persistence.
  */
-export function PatternsSection({ rows }: { rows: RunRow[] }) {
-  const [filter, setFilter] = useState<ModeFilter>("all");
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = window.localStorage.getItem(FILTER_KEY);
-      if (stored && isModeFilter(stored)) setFilter(stored);
-    } catch {
-      // ignore
-    }
-    setHydrated(true);
-  }, []);
-
-  const pickFilter = (f: ModeFilter) => {
-    setFilter(f);
-    try {
-      window.localStorage.setItem(FILTER_KEY, f);
-    } catch {
-      // ignore
-    }
-  };
-
+export function PatternsSection({
+  rows,
+  filter,
+}: {
+  rows: RunRow[];
+  filter: ModeFilter;
+}) {
   const focus = useMemo(() => findFocusTag(rows, filter), [rows, filter]);
 
   const sortedTags = useMemo(() => {
@@ -73,40 +41,12 @@ export function PatternsSection({ rows }: { rows: RunRow[] }) {
       .sort((a, b) => b.meanMs - a.meanMs);
   }, [rows, filter]);
 
-  if (!hydrated) {
-    return (
-      <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-white/42">
-        loading…
-      </p>
-    );
-  }
-
   return (
     <div>
-      <div className="flex gap-1 mb-5 flex-wrap">
-        {FILTERS.map((f) => {
-          const active = f === filter;
-          return (
-            <button
-              key={f}
-              type="button"
-              onClick={() => pickFilter(f)}
-              className={`px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase border transition-colors ${
-                active
-                  ? "border-white text-white"
-                  : "border-white/10 text-white/42 hover:text-white hover:border-white/30"
-              }`}
-            >
-              {FILTER_LABEL[f]}
-            </button>
-          );
-        })}
-      </div>
-
       {focus && (
         <div className="border border-white/15 bg-white/[0.03] px-5 py-4 mb-6">
           <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-2">
-            Learn · {FILTER_LABEL[filter].toLowerCase()}
+            Focus
           </p>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <span className="font-light text-lg tracking-[-0.01em] text-white">

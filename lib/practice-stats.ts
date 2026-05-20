@@ -46,8 +46,8 @@ export type PracticeMode = "classic" | "quant" | "compound" | "learn";
  */
 export type SaveMode = PracticeMode | "ranked" | "daily";
 
-/** Filter values for the `/me` Patterns section chip row. */
-export type ModeFilter = "all" | "classic" | "ranked" | "daily";
+/** Filter values for the `/me` Stats tab chip row. */
+export type ModeFilter = "all" | "classic" | "learn" | "ranked" | "daily";
 
 export type StatTriple = {
   n: number;
@@ -171,12 +171,15 @@ export function rollupRoundResult(
 
 /**
  * The canonical in-memory shape returned to readers. The localStorage layer
- * normalizes both v2 and v3 rows into this shape (v3 with byTag, tagVersion).
- * Migrated v2 rows have byTag={} and tagVersion=0 — invisible to the
- * weak-pattern diagnostic, but still queryable for op/mulFact stats.
+ * normalizes v1/v2/v3 rows into this shape. Migrated rows fill missing fields
+ * with sensible defaults (byTag={}, tagVersion=0, runId=undefined).
+ *
+ * v4 adds `runId` — present for ranked/daily rows (the server-issued id, so
+ * recent-runs UI can deep-link to `/r/[run_id]`). Practice rows leave it
+ * undefined; they have no server-side permalink.
  */
 export type RunRow = {
-  v: 3;
+  v: 4;
   mode?: SaveMode;
   score: number;
   problemsAttempted: number;
@@ -189,6 +192,8 @@ export type RunRow = {
   byTag: Record<string, TagStats>;
   /** TAG_VERSION at the time the row was saved. 0 = legacy v2 row, no tags. */
   tagVersion: number;
+  /** Server-issued run id for ranked/daily; undefined for local-only modes. */
+  runId?: string;
 };
 
 export type OpSummary = {
@@ -198,9 +203,13 @@ export type OpSummary = {
   meanLatencyMs: number;  // 0 when n=0
 };
 
-export function summarizeByOp(rows: RunRow[]): Record<Op, OpSummary> {
+export function summarizeByOp(
+  rows: RunRow[],
+  filter: ModeFilter = "all",
+): Record<Op, OpSummary> {
   const totals = emptyByOp();
   for (const row of rows) {
+    if (!rowMatchesFilter(row, filter)) continue;
     for (const op of ALL_OPS) {
       const slot = row.byOp[op] ?? emptyTriple();
       totals[op].n += slot.n;
@@ -236,9 +245,13 @@ export type FactSummary = {
  * are NOT in the result — the consumer fills them in based on the canonical
  * 2..12 grid.
  */
-export function summarizeMulFacts(rows: RunRow[]): FactSummary[] {
+export function summarizeMulFacts(
+  rows: RunRow[],
+  filter: ModeFilter = "all",
+): FactSummary[] {
   const totals: Record<string, StatTriple> = {};
   for (const row of rows) {
+    if (!rowMatchesFilter(row, filter)) continue;
     for (const [key, cell] of Object.entries(row.mulFacts ?? {})) {
       const t = totals[key] ?? emptyTriple();
       t.n += cell.n;
@@ -263,8 +276,14 @@ export function summarizeMulFacts(rows: RunRow[]): FactSummary[] {
 export type ScorePoint = { score: number; endedAt: number };
 
 /** Last N runs in chronological order (oldest first). Defaults to 30. */
-export function lastNScores(rows: RunRow[], n = 30): ScorePoint[] {
-  const sorted = [...rows].sort((x, y) => x.endedAt - y.endedAt);
+export function lastNScores(
+  rows: RunRow[],
+  n = 30,
+  filter: ModeFilter = "all",
+): ScorePoint[] {
+  const filtered =
+    filter === "all" ? rows : rows.filter((r) => rowMatchesFilter(r, filter));
+  const sorted = [...filtered].sort((x, y) => x.endedAt - y.endedAt);
   return sorted.slice(-n).map((r) => ({ score: r.score, endedAt: r.endedAt }));
 }
 
@@ -275,18 +294,37 @@ export type LifetimeTotals = {
   totalDurationMs: number;
 };
 
-export function lifetimeTotals(rows: RunRow[]): LifetimeTotals {
+export function lifetimeTotals(
+  rows: RunRow[],
+  filter: ModeFilter = "all",
+): LifetimeTotals {
   let runs = 0;
   let problemsAttempted = 0;
   let problemsCorrect = 0;
   let totalDurationMs = 0;
   for (const r of rows) {
+    if (!rowMatchesFilter(r, filter)) continue;
     runs += 1;
     problemsAttempted += r.problemsAttempted;
     problemsCorrect += r.problemsCorrect;
     totalDurationMs += r.durationMs;
   }
   return { runs, problemsAttempted, problemsCorrect, totalDurationMs };
+}
+
+/**
+ * Newest-first slice of runs respecting the mode filter. The recent-runs
+ * section on /me uses this to render a 20-row list users can scan to see
+ * their actual round history (not just rollups).
+ */
+export function recentRuns(
+  rows: RunRow[],
+  filter: ModeFilter = "all",
+  n = 20,
+): RunRow[] {
+  const filtered =
+    filter === "all" ? rows : rows.filter((r) => rowMatchesFilter(r, filter));
+  return [...filtered].sort((a, b) => b.endedAt - a.endedAt).slice(0, n);
 }
 
 // ---------------------------------------------------------------------------

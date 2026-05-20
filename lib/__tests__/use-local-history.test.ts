@@ -15,7 +15,8 @@ import {
 
 const STORAGE_KEY_V1 = "zetamax:practice-history";
 const STORAGE_KEY_V2 = "zetamax:practice-history-v2";
-const STORAGE_KEY = "zetamax:practice-history-v3";
+const STORAGE_KEY_V3 = "zetamax:practice-history-v3";
+const STORAGE_KEY = "zetamax:practice-history-v4";
 
 class FakeStorage {
   store = new Map<string, string>();
@@ -101,11 +102,12 @@ describe("getHistory", () => {
 });
 
 describe("saveRun", () => {
-  it("round-trips a v3 run with byTag and tagVersion", () => {
+  it("round-trips a v4 run with byTag and tagVersion", () => {
     const result = makeResult("rt-1", 20);
     const saved = saveRun("classic", "rt-1", ZETAMAC_DEFAULTS, result, DURATION_MS);
-    expect(saved.v).toBe(3);
+    expect(saved.v).toBe(4);
     expect(saved.mode).toBe("classic");
+    expect(saved.runId).toBeUndefined();
     expect(saved.score).toBe(20);
     expect(saved.problemsCorrect).toBe(20);
     expect(saved.tagVersion).toBe(TAG_VERSION);
@@ -144,9 +146,9 @@ describe("saveRun", () => {
   });
 
   it("caps history at MAX_STORED rows", () => {
-    // Pre-fill v3 storage directly with 1005 valid rows.
+    // Pre-fill v4 storage directly with 1005 valid rows.
     const rows = Array.from({ length: 1005 }, (_, i) => ({
-      v: 3 as const,
+      v: 4 as const,
       mode: "classic" as const,
       score: i,
       problemsAttempted: i,
@@ -188,17 +190,17 @@ describe("saveRun", () => {
   });
 });
 
-describe("v1 → v3 migration", () => {
+describe("v1 → v4 migration", () => {
   const v1Rows = [
     { score: 30, problemsAttempted: 32, accuracy: 30 / 32, meanLatencyMs: 1100, endedAt: 100 },
     { score: 25, problemsAttempted: 27, accuracy: 25 / 27, meanLatencyMs: 1300, endedAt: 200 },
   ];
 
-  it("copies v1 rows into v3 with empty byOp/mulFacts/byTag and removes v1 key", () => {
+  it("copies v1 rows into v4 with empty byOp/mulFacts/byTag and removes v1 key", () => {
     storage.setItem(STORAGE_KEY_V1, JSON.stringify(v1Rows));
     const history = getHistory();
     expect(history).toHaveLength(2);
-    expect(history[0].v).toBe(3);
+    expect(history[0].v).toBe(4);
     expect(history[0].score).toBe(30);
     expect(history[0].mode).toBe("classic");
     for (const op of ["add", "sub", "mul", "div"] as const) {
@@ -233,7 +235,7 @@ describe("v1 → v3 migration", () => {
   });
 });
 
-describe("v2 → v3 migration", () => {
+describe("v2 → v4 migration", () => {
   const v2Rows = [
     {
       v: 2,
@@ -258,19 +260,19 @@ describe("v2 → v3 migration", () => {
     storage.setItem(STORAGE_KEY_V2, JSON.stringify(v2Rows));
     const history = getHistory();
     expect(history).toHaveLength(1);
-    expect(history[0].v).toBe(3);
+    expect(history[0].v).toBe(4);
     expect(history[0].mode).toBe("classic");
     expect(history[0].byOp.add.n).toBe(4);
     expect(history[0].mulFacts["7x8"]).toEqual({ n: 2, correct: 2, sumLatencyMs: 2200 });
     expect(history[0].byTag).toEqual({});
     expect(history[0].tagVersion).toBe(0);
+    expect(history[0].runId).toBeUndefined();
     expect(storage.getItem(STORAGE_KEY_V2)).toBeNull();
   });
 
-  it("v3 wins when both v2 and v3 keys exist (v3 already migrated)", () => {
-    // Existing v3 row
-    const v3Row = {
-      v: 3 as const,
+  it("v4 wins when both v2 and v4 keys exist (v4 already migrated)", () => {
+    const v4Row = {
+      v: 4 as const,
       mode: "classic" as const,
       score: 99,
       problemsAttempted: 99,
@@ -288,7 +290,7 @@ describe("v2 → v3 migration", () => {
       byTag: {},
       tagVersion: TAG_VERSION,
     };
-    storage.setItem(STORAGE_KEY, JSON.stringify([v3Row]));
+    storage.setItem(STORAGE_KEY, JSON.stringify([v4Row]));
     storage.setItem(STORAGE_KEY_V2, JSON.stringify(v2Rows));
     const history = getHistory();
     expect(history).toHaveLength(1);
@@ -297,13 +299,109 @@ describe("v2 → v3 migration", () => {
   });
 });
 
+describe("v3 → v4 migration", () => {
+  const v3Rows = [
+    {
+      v: 3 as const,
+      mode: "ranked" as const,
+      score: 40,
+      problemsAttempted: 42,
+      problemsCorrect: 40,
+      meanLatencyMs: 1200,
+      durationMs: 120_000,
+      endedAt: 500,
+      byOp: {
+        add: { n: 10, correct: 10, sumLatencyMs: 11_000 },
+        sub: { n: 10, correct: 10, sumLatencyMs: 11_000 },
+        mul: { n: 10, correct: 10, sumLatencyMs: 11_000 },
+        div: { n: 10, correct: 10, sumLatencyMs: 11_000 },
+      },
+      mulFacts: { "6x7": { n: 3, correct: 3, sumLatencyMs: 3300 } },
+      byTag: {},
+      tagVersion: 0,
+    },
+  ];
+
+  it("walks v3 rows forward to v4 with runId undefined and removes v3 key", () => {
+    storage.setItem(STORAGE_KEY_V3, JSON.stringify(v3Rows));
+    const history = getHistory();
+    expect(history).toHaveLength(1);
+    expect(history[0].v).toBe(4);
+    expect(history[0].mode).toBe("ranked");
+    expect(history[0].score).toBe(40);
+    expect(history[0].byOp.add.n).toBe(10);
+    expect(history[0].mulFacts["6x7"]).toEqual({ n: 3, correct: 3, sumLatencyMs: 3300 });
+    expect(history[0].runId).toBeUndefined();
+    expect(storage.getItem(STORAGE_KEY_V3)).toBeNull();
+    expect(storage.getItem(STORAGE_KEY)).not.toBeNull();
+  });
+
+  it("v4 wins when both v3 and v4 keys exist", () => {
+    const v4Row = {
+      v: 4 as const,
+      mode: "classic" as const,
+      score: 77,
+      problemsAttempted: 77,
+      problemsCorrect: 77,
+      meanLatencyMs: 900,
+      durationMs: 120_000,
+      endedAt: 1,
+      byOp: {
+        add: { n: 0, correct: 0, sumLatencyMs: 0 },
+        sub: { n: 0, correct: 0, sumLatencyMs: 0 },
+        mul: { n: 0, correct: 0, sumLatencyMs: 0 },
+        div: { n: 0, correct: 0, sumLatencyMs: 0 },
+      },
+      mulFacts: {},
+      byTag: {},
+      tagVersion: TAG_VERSION,
+    };
+    storage.setItem(STORAGE_KEY, JSON.stringify([v4Row]));
+    storage.setItem(STORAGE_KEY_V3, JSON.stringify(v3Rows));
+    const history = getHistory();
+    expect(history).toHaveLength(1);
+    expect(history[0].score).toBe(77);
+    expect(storage.getItem(STORAGE_KEY_V3)).toBeNull();
+  });
+});
+
+describe("saveRun runId option", () => {
+  it("persists runId when provided (ranked/daily) and reads it back", () => {
+    const result = makeResult("rid-1", 5);
+    const saved = saveRun(
+      "ranked",
+      "rid-1",
+      ZETAMAC_DEFAULTS,
+      result,
+      DURATION_MS,
+      { runId: "11111111-2222-3333-4444-555555555555" },
+    );
+    expect(saved.runId).toBe("11111111-2222-3333-4444-555555555555");
+    const history = getHistory();
+    expect(history[0].runId).toBe("11111111-2222-3333-4444-555555555555");
+  });
+
+  it("leaves runId undefined when omitted (practice modes)", () => {
+    const saved = saveRun(
+      "classic",
+      "rid-2",
+      ZETAMAC_DEFAULTS,
+      makeResult("rid-2", 3),
+      DURATION_MS,
+    );
+    expect(saved.runId).toBeUndefined();
+  });
+});
+
 describe("clearHistory", () => {
-  it("removes v1, v2, and v3 keys", () => {
+  it("removes v1, v2, v3, and v4 keys", () => {
     storage.setItem(STORAGE_KEY, JSON.stringify([]));
+    storage.setItem(STORAGE_KEY_V3, JSON.stringify([]));
     storage.setItem(STORAGE_KEY_V2, JSON.stringify([]));
     storage.setItem(STORAGE_KEY_V1, JSON.stringify([]));
     clearHistory();
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
+    expect(storage.getItem(STORAGE_KEY_V3)).toBeNull();
     expect(storage.getItem(STORAGE_KEY_V2)).toBeNull();
     expect(storage.getItem(STORAGE_KEY_V1)).toBeNull();
   });

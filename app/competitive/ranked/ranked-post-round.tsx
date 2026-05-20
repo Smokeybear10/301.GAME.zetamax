@@ -54,7 +54,9 @@ export function RankedPostRound({
         // /me can aggregate ranked rounds. Only on validated saves.
         if (response.validation_status === "ok" && !response.cached) {
           try {
-            saveRun("ranked", seed, ZETAMAC_DEFAULTS, result, durationMs);
+            saveRun("ranked", seed, ZETAMAC_DEFAULTS, result, durationMs, {
+              runId,
+            });
           } catch {
             // best-effort — local stats are nice-to-have, not load-bearing
           }
