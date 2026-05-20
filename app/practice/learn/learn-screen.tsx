@@ -265,7 +265,7 @@ function ActiveView({
       // Abandoned. Still flip to ended so the post-round can render the
       // empty-state. Synthesize an empty row.
       onSaved({
-        v: 3,
+        v: 4,
         mode: "learn",
         score: 0,
         problemsAttempted: 0,

@@ -28,16 +28,19 @@ function coerceMode(raw: unknown): SaveMode {
 }
 
 /**
- * Round-history store. v3 schema captures per-op stats, mul-fact map, AND
- * per-tag stats (skill + pattern attribution per problem). Aggregating the
- * weak-pattern diagnostic across rows is then trivial — every triple is
- * additive.
+ * Round-history store. v4 schema captures per-op stats, mul-fact map,
+ * per-tag stats (skill + pattern attribution per problem), AND an optional
+ * server-issued run id (ranked/daily only — lets the recent-runs list
+ * deep-link to `/r/[run_id]`).
  *
  * Migration history:
  *   v1 → v2: dropped key, schema bumped to per-op + mul-facts.
  *   v2 → v3: dropped key, schema bumped to add byTag + tagVersion. Legacy v2
  *           rows migrate forward with byTag={} and tagVersion=0 (invisible
  *           to the diagnostic, still queryable for op/mul-fact stats).
+ *   v3 → v4: dropped key, schema bumped to add optional runId. v3 rows
+ *           migrate forward with runId=undefined (rendered non-clickable in
+ *           recent-runs — no server permalink to point at).
  *
  * Cap: 1000 stored runs (~1KB/run = 1MB, well under the 5MB localStorage
  * budget). Older runs are pruned silently.
@@ -45,7 +48,8 @@ function coerceMode(raw: unknown): SaveMode {
 
 const STORAGE_KEY_V1 = "zetamax:practice-history";
 const STORAGE_KEY_V2 = "zetamax:practice-history-v2";
-const STORAGE_KEY = "zetamax:practice-history-v3";
+const STORAGE_KEY_V3 = "zetamax:practice-history-v3";
+const STORAGE_KEY = "zetamax:practice-history-v4";
 const MAX_STORED = 1000;
 const DEFAULT_DURATION_MS = 120_000;
 
@@ -79,9 +83,9 @@ function isV1Run(x: unknown): x is V1Run {
   );
 }
 
-function v1ToV3(r: V1Run): StoredRun {
+function v1ToV4(r: V1Run): StoredRun {
   return {
-    v: 3,
+    v: 4,
     mode: "classic",
     score: r.score,
     problemsAttempted: r.problemsAttempted,
@@ -123,9 +127,9 @@ function isV2RowShape(x: unknown): x is V2RowShape {
   );
 }
 
-function v2ToV3(r: V2RowShape): StoredRun {
+function v2ToV4(r: V2RowShape): StoredRun {
   return {
-    v: 3,
+    v: 4,
     mode: coerceMode(r.mode),
     score: r.score,
     problemsAttempted: r.problemsAttempted ?? 0,
@@ -146,28 +150,102 @@ function v2ToV3(r: V2RowShape): StoredRun {
 }
 
 /**
- * One-shot migration. Idempotent — if the v3 key already exists, older keys
+ * v3 row shape — current-minus-one. Same fields as v4 except for `v` and
+ * the missing `runId`. Walk-forward migration copies through.
+ */
+type V3RowShape = {
+  v: 3;
+  mode?: SaveMode;
+  score: number;
+  problemsAttempted?: number;
+  problemsCorrect?: number;
+  meanLatencyMs?: number;
+  durationMs?: number;
+  endedAt: number;
+  byOp?: ByOpStats;
+  mulFacts?: MulFactsStats;
+  byTag?: unknown;
+  tagVersion?: number;
+};
+
+function isV3RowShape(x: unknown): x is V3RowShape {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    o.v === 3 &&
+    typeof o.score === "number" &&
+    typeof o.endedAt === "number"
+  );
+}
+
+function v3ToV4(r: V3RowShape): StoredRun {
+  return {
+    v: 4,
+    mode: coerceMode(r.mode),
+    score: r.score,
+    problemsAttempted: r.problemsAttempted ?? 0,
+    problemsCorrect: r.problemsCorrect ?? r.score,
+    meanLatencyMs: r.meanLatencyMs ?? 0,
+    durationMs: r.durationMs ?? DEFAULT_DURATION_MS,
+    endedAt: r.endedAt,
+    byOp: {
+      add: r.byOp?.add ?? emptyTriple(),
+      sub: r.byOp?.sub ?? emptyTriple(),
+      mul: r.byOp?.mul ?? emptyTriple(),
+      div: r.byOp?.div ?? emptyTriple(),
+    },
+    mulFacts: r.mulFacts ?? {},
+    byTag: normalizeByTag(r.byTag),
+    tagVersion: typeof r.tagVersion === "number" ? r.tagVersion : 0,
+    // runId stays undefined — v3 rows were never linked to a server run id.
+  };
+}
+
+/**
+ * One-shot migration. Idempotent — if the v4 key already exists, older keys
  * are dropped without re-importing. Failures are silent (don't kill user
  * data on a transient parse error).
+ *
+ * Preference order: v4 wins → v3 → v2 → v1. Each fallback migrates forward
+ * to v4 and drops every older key.
  */
 function migrateIfNeeded(): void {
   if (typeof window === "undefined") return;
   try {
-    const v3Raw = window.localStorage.getItem(STORAGE_KEY);
-    if (v3Raw) {
-      // Already on v3. Drop legacy keys if they're hanging around.
-      window.localStorage.removeItem(STORAGE_KEY_V1);
+    const v4Raw = window.localStorage.getItem(STORAGE_KEY);
+    if (v4Raw) {
+      // Already on v4. Drop legacy keys if they're hanging around.
+      window.localStorage.removeItem(STORAGE_KEY_V3);
       window.localStorage.removeItem(STORAGE_KEY_V2);
+      window.localStorage.removeItem(STORAGE_KEY_V1);
       return;
     }
 
-    // Prefer v2 → v3 if v2 has data.
+    // Prefer v3 → v4 if v3 has data.
+    const v3Raw = window.localStorage.getItem(STORAGE_KEY_V3);
+    if (v3Raw) {
+      try {
+        const parsed = JSON.parse(v3Raw);
+        if (Array.isArray(parsed)) {
+          const migrated = parsed.filter(isV3RowShape).map(v3ToV4);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        }
+      } catch {
+        // ignore — leave v3 alone, write nothing
+      }
+      window.localStorage.removeItem(STORAGE_KEY_V3);
+      window.localStorage.removeItem(STORAGE_KEY_V2);
+      window.localStorage.removeItem(STORAGE_KEY_V1);
+      return;
+    }
+
+    // No v3 — fall back to v2 → v4.
     const v2Raw = window.localStorage.getItem(STORAGE_KEY_V2);
     if (v2Raw) {
       try {
         const parsed = JSON.parse(v2Raw);
         if (Array.isArray(parsed)) {
-          const migrated = parsed.filter(isV2RowShape).map(v2ToV3);
+          const migrated = parsed.filter(isV2RowShape).map(v2ToV4);
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
         }
       } catch {
@@ -178,13 +256,13 @@ function migrateIfNeeded(): void {
       return;
     }
 
-    // No v2 — fall back to v1 → v3.
+    // No v2 — fall back to v1 → v4.
     const v1Raw = window.localStorage.getItem(STORAGE_KEY_V1);
     if (v1Raw) {
       try {
         const parsed = JSON.parse(v1Raw);
         if (Array.isArray(parsed)) {
-          const migrated = parsed.filter(isV1Run).map(v1ToV3);
+          const migrated = parsed.filter(isV1Run).map(v1ToV4);
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
         }
       } catch {
@@ -201,11 +279,11 @@ function migrateIfNeeded(): void {
 // Read / write
 // ---------------------------------------------------------------------------
 
-function isV3StoredRun(x: unknown): x is StoredRun {
+function isV4StoredRun(x: unknown): x is StoredRun {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   return (
-    o.v === 3 &&
+    o.v === 4 &&
     typeof o.score === "number" &&
     typeof o.endedAt === "number" &&
     typeof o.byOp === "object" &&
@@ -239,10 +317,10 @@ function normalizeByTag(raw: unknown): Record<string, TagStats> {
 }
 
 function normalizeRun(raw: unknown): StoredRun | null {
-  if (!isV3StoredRun(raw)) return null;
+  if (!isV4StoredRun(raw)) return null;
   const o = raw as Partial<StoredRun> & StoredRun;
   return {
-    v: 3,
+    v: 4,
     mode: coerceMode(o.mode),
     score: o.score,
     problemsAttempted: o.problemsAttempted ?? 0,
@@ -259,6 +337,7 @@ function normalizeRun(raw: unknown): StoredRun | null {
     mulFacts: o.mulFacts ?? {},
     byTag: normalizeByTag(o.byTag),
     tagVersion: typeof o.tagVersion === "number" ? o.tagVersion : 0,
+    runId: typeof o.runId === "string" ? o.runId : undefined,
   };
 }
 
@@ -287,11 +366,16 @@ function writeHistory(history: StoredRun[]): void {
   }
 }
 
-/** Read the full v3 history. Triggers v1/v2 → v3 migration on first call. */
+/** Read the full v4 history. Triggers v1/v2/v3 → v4 migration on first call. */
 export function getHistory(): StoredRun[] {
   migrateIfNeeded();
   return readHistoryRaw();
 }
+
+export type SaveRunOptions = {
+  /** Server-issued run id. Ranked/daily pass this so recent-runs can link to /r/[run_id]. */
+  runId?: string;
+};
 
 /**
  * Persist a single round. Computes the per-op + mul-fact + per-tag rollup
@@ -299,6 +383,10 @@ export function getHistory(): StoredRun[] {
  *
  * `durationMs` should be the round's actual duration so the late-round
  * fatigue filter inside the tag rollup uses the right cutoff.
+ *
+ * `opts.runId` carries the server-issued run id for ranked/daily rows so
+ * the recent-runs list on /me can deep-link to /r/[run_id]. Practice modes
+ * leave it undefined.
  */
 export function saveRun(
   mode: SaveMode,
@@ -306,10 +394,11 @@ export function saveRun(
   generatorConfig: GeneratorConfig,
   result: RoundResult,
   durationMs: number,
+  opts: SaveRunOptions = {},
 ): StoredRun {
   const rollup = rollupRoundResult(seed, generatorConfig, result, durationMs);
   const stored: StoredRun = {
-    v: 3,
+    v: 4,
     mode,
     score: result.score,
     problemsAttempted: result.problemsAttempted,
@@ -321,6 +410,7 @@ export function saveRun(
     mulFacts: rollup.mulFacts,
     byTag: rollup.byTag,
     tagVersion: rollup.tagVersion,
+    runId: opts.runId,
   };
   const next = [...getHistory(), stored];
   writeHistory(next);
@@ -332,6 +422,7 @@ export function clearHistory(): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(STORAGE_KEY_V3);
     window.localStorage.removeItem(STORAGE_KEY_V2);
     window.localStorage.removeItem(STORAGE_KEY_V1);
   } catch {
