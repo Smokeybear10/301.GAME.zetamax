@@ -6,7 +6,12 @@ type Props = {
   facts: FactSummary[];
 };
 
-const COLD_START_THRESHOLD = 5;
+// Cells with at least this many samples participate in the latency colour
+// ramp. Below this they still render — at a confidence-dampened opacity that
+// reflects the cell has been touched but isn't yet a stable measurement.
+const RAMP_THRESHOLD = 2;
+// Sample count at which a cell is considered fully-confident for opacity.
+const FULL_CONFIDENCE_N = 6;
 
 function fmtLatencyShort(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -14,20 +19,19 @@ function fmtLatencyShort(ms: number): string {
 }
 
 export function MulFactGrid({ facts }: Props) {
-  // Index facts by canonical key (lo×hi) for O(1) lookup. Cold-start cells
-  // simply aren't in the map; the grid below renders them grayed.
+  // Index facts by canonical key (lo×hi) for O(1) lookup.
   const byKey = new Map<string, FactSummary>();
   for (const f of facts) {
     byKey.set(`${Math.min(f.a, f.b)}x${Math.max(f.a, f.b)}`, f);
   }
 
   // Determine the latency range for the color ramp. Slowest = brightest
-  // (the "weak fact" highlight). Cells with n < COLD_START_THRESHOLD are
-  // excluded from the range calc so a single sample doesn't blow the scale.
+  // (the "weak fact" highlight). Cells with n < RAMP_THRESHOLD are excluded
+  // from the range calc so a single sample doesn't blow the scale.
   let minLat = Infinity;
   let maxLat = 0;
   for (const f of facts) {
-    if (f.n < COLD_START_THRESHOLD) continue;
+    if (f.n < RAMP_THRESHOLD) continue;
     if (f.meanLatencyMs < minLat) minLat = f.meanLatencyMs;
     if (f.meanLatencyMs > maxLat) maxLat = f.meanLatencyMs;
   }
@@ -37,7 +41,8 @@ export function MulFactGrid({ facts }: Props) {
   for (let i = MUL_FACT_MIN; i <= MUL_FACT_MAX; i++) factors.push(i);
 
   const totalCells = factors.length * factors.length;
-  const populated = facts.filter((f) => f.n >= COLD_START_THRESHOLD).length;
+  const touched = facts.filter((f) => f.n >= 1).length;
+  const stable = facts.filter((f) => f.n >= RAMP_THRESHOLD).length;
 
   return (
     <div>
@@ -69,37 +74,52 @@ export function MulFactGrid({ facts }: Props) {
                 {factors.map((b) => {
                   const key = `${Math.min(a, b)}x${Math.max(a, b)}`;
                   const fact = byKey.get(key);
-                  const cold = !fact || fact.n < COLD_START_THRESHOLD;
-                  let opacity = 0.06;
-                  if (!cold && haveRange) {
-                    // Linear ramp; clamp to [0.18, 0.92].
-                    const t = (fact!.meanLatencyMs - minLat) / (maxLat - minLat);
-                    opacity = 0.18 + t * (0.92 - 0.18);
-                  } else if (!cold) {
-                    opacity = 0.55; // single populated cell — no range to ramp against
+                  const n = fact?.n ?? 0;
+
+                  // Cell shading rules:
+                  //   n=0       → empty cell, thin border (still see grid).
+                  //   n>=1      → latency-mapped opacity (or neutral 0.55 if
+                  //               range hasn't formed), dampened by a
+                  //               sample-size confidence factor 0.35..1.
+                  //               Low-n cells show count so the reader knows
+                  //               the colour is provisional.
+                  let opacity = 0;
+                  let target = 0.55;
+                  if (fact && n >= 1) {
+                    if (n >= RAMP_THRESHOLD && haveRange) {
+                      const t =
+                        (fact.meanLatencyMs - minLat) / (maxLat - minLat);
+                      target = 0.18 + t * (0.92 - 0.18);
+                    }
+                    const confidence = Math.min(1, n / FULL_CONFIDENCE_N);
+                    opacity = 0.35 + (target - 0.35) * confidence;
                   }
+
                   const title = fact
-                    ? cold
-                      ? `${a} × ${b} — ${fact.n} attempt${fact.n === 1 ? "" : "s"}`
-                      : `${a} × ${b} = ${a * b} — ${fmtLatencyShort(
-                          fact.meanLatencyMs,
-                        )}, ${Math.round(fact.accuracy * 100)}% over ${fact.n}`
+                    ? `${a} × ${b} = ${a * b} — ${fmtLatencyShort(
+                        fact.meanLatencyMs,
+                      )}, ${Math.round(fact.accuracy * 100)}% over ${n}`
                     : `${a} × ${b} — no data yet`;
+
+                  const showCount = n >= 1 && n < FULL_CONFIDENCE_N;
+
                   return (
-                    <td
-                      key={`${a}-${b}`}
-                      className="p-0"
-                    >
+                    <td key={`${a}-${b}`} className="p-0">
                       <div
                         title={title}
                         aria-label={title}
-                        className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center font-mono text-[9px] tabular-nums motion-safe:transition-[background-color] motion-safe:duration-300"
+                        className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center font-mono text-[9px] tabular-nums motion-safe:transition-[background-color] motion-safe:duration-300 ${
+                          n === 0 ? "border border-white/[0.06]" : ""
+                        }`}
                         style={{
-                          backgroundColor: `rgba(255,255,255,${opacity})`,
+                          backgroundColor:
+                            n === 0
+                              ? "transparent"
+                              : `rgba(255,255,255,${opacity})`,
                         }}
                       >
-                        {cold && fact ? (
-                          <span className="text-white/42">{fact.n}</span>
+                        {showCount ? (
+                          <span className="text-white/65">{n}</span>
                         ) : null}
                       </div>
                     </td>
@@ -110,9 +130,9 @@ export function MulFactGrid({ facts }: Props) {
           </tbody>
         </table>
       </div>
-      <div className="flex justify-between items-center mt-3 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42">
+      <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-2 mt-3 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42">
         <span>
-          {populated}/{totalCells} cells with ≥{COLD_START_THRESHOLD} samples
+          {touched}/{totalCells} touched · {stable} with ≥{RAMP_THRESHOLD}
         </span>
         <span className="flex items-center gap-2">
           fast
