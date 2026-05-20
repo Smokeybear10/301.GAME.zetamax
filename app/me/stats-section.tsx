@@ -10,39 +10,80 @@ import {
 import {
   lastNScores,
   lifetimeTotals,
+  recentRuns,
   summarizeByOp,
   summarizeMulFacts,
+  type ModeFilter,
 } from "@/lib/practice-stats";
 import { ZpButton } from "@/components/ui/zp-button";
 import { MulFactGrid } from "./mul-fact-grid";
 import { OpBars } from "./op-bars";
 import { PatternsSection } from "./patterns-section";
+import { RecentRuns } from "./recent-runs";
 import { ScoreSparkline } from "./score-sparkline";
 
 const SPARKLINE_WINDOW = 30;
+const RECENT_WINDOW = 20;
+const FILTER_KEY = "zetamax:stats-filter";
+
+const FILTERS: readonly ModeFilter[] = [
+  "all",
+  "classic",
+  "learn",
+  "ranked",
+  "daily",
+] as const;
+const FILTER_LABEL: Record<ModeFilter, string> = {
+  all: "All",
+  classic: "Classic",
+  learn: "Learn",
+  ranked: "Ranked",
+  daily: "Daily",
+};
+
+function isModeFilter(s: string): s is ModeFilter {
+  return (FILTERS as readonly string[]).includes(s);
+}
 
 type Hydration = "loading" | "ready";
 
 export function StatsSection() {
   const [phase, setPhase] = useState<Hydration>("loading");
   const [rows, setRows] = useState<StoredRun[]>([]);
+  const [filter, setFilter] = useState<ModeFilter>("all");
 
   // Defer localStorage reads to a useEffect — same SSR-safe pattern as
   // usePracticeConfig. Empty rows + "loading" phase shows during hydration;
   // the empty state proper only fires once we've confirmed nothing's stored.
   useEffect(() => {
     setRows(getHistory());
+    try {
+      const stored = window.localStorage.getItem(FILTER_KEY);
+      if (stored && isModeFilter(stored)) setFilter(stored);
+    } catch {
+      // ignore
+    }
     setPhase("ready");
+  }, []);
+
+  const pickFilter = useCallback((f: ModeFilter) => {
+    setFilter(f);
+    try {
+      window.localStorage.setItem(FILTER_KEY, f);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const aggregates = useMemo(() => {
     return {
-      totals: lifetimeTotals(rows),
-      byOp: summarizeByOp(rows),
-      facts: summarizeMulFacts(rows),
-      points: lastNScores(rows, SPARKLINE_WINDOW),
+      totals: lifetimeTotals(rows, filter),
+      byOp: summarizeByOp(rows, filter),
+      facts: summarizeMulFacts(rows, filter),
+      points: lastNScores(rows, SPARKLINE_WINDOW, filter),
+      recent: recentRuns(rows, filter, RECENT_WINDOW),
     };
-  }, [rows]);
+  }, [rows, filter]);
 
   const handleReset = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -84,26 +125,34 @@ export function StatsSection() {
     return <EmptyState />;
   }
 
+  const filterSlug = FILTER_LABEL[filter].toLowerCase();
+
   return (
     <div className="space-y-12 sm:space-y-14">
-      <Section label="Lifetime · practice">
+      <FilterChips active={filter} onPick={pickFilter} />
+
+      <Section label={`Recent · ${filterSlug}`}>
+        <RecentRuns runs={aggregates.recent} />
+      </Section>
+
+      <Section label={`Lifetime · ${filterSlug}`}>
         <LifetimeStrip totals={aggregates.totals} />
       </Section>
 
-      <Section label="Score">
+      <Section label={`Score · ${filterSlug}`}>
         <ScoreSparkline points={aggregates.points} />
       </Section>
 
-      <Section label="By operation">
+      <Section label={`By operation · ${filterSlug}`}>
         <OpBars summary={aggregates.byOp} />
       </Section>
 
-      <Section label="Multiplication facts · 2–12">
+      <Section label={`Multiplication facts · 2–12 · ${filterSlug}`}>
         <MulFactGrid facts={aggregates.facts} />
       </Section>
 
-      <Section label="Learn">
-        <PatternsSection rows={rows} />
+      <Section label={`Learn · ${filterSlug}`}>
+        <PatternsSection rows={rows} filter={filter} />
       </Section>
 
       <footer className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-8 border-t border-white/10">
@@ -117,6 +166,42 @@ export function StatsSection() {
           stored locally · this device only
         </p>
       </footer>
+    </div>
+  );
+}
+
+function FilterChips({
+  active,
+  onPick,
+}: {
+  active: ModeFilter;
+  onPick: (f: ModeFilter) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Filter stats by mode"
+      className="flex gap-1 flex-wrap"
+    >
+      {FILTERS.map((f) => {
+        const isActive = f === active;
+        return (
+          <button
+            key={f}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onPick(f)}
+            className={`px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase border transition-colors ${
+              isActive
+                ? "border-white text-white"
+                : "border-white/10 text-white/42 hover:text-white hover:border-white/30"
+            }`}
+          >
+            {FILTER_LABEL[f]}
+          </button>
+        );
+      })}
     </div>
   );
 }

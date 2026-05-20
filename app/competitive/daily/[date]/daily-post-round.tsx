@@ -68,7 +68,9 @@ export function DailyPostRound({
         setSub({ phase: "ok", response });
         if (response.validation_status === "ok" && !response.cached) {
           try {
-            saveRun("daily", seed, ZETAMAC_DEFAULTS, result, durationMs);
+            saveRun("daily", seed, ZETAMAC_DEFAULTS, result, durationMs, {
+              runId,
+            });
           } catch {
             // best-effort
           }
