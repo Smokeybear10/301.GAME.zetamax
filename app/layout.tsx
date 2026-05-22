@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "next-themes";
 import { ServiceWorkerRegistration } from "./sw-register";
+import { ThemeMusic } from "./_components/theme-music";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -54,15 +54,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+      <body
+        className={`${geistSans.variable} ${jetbrainsMono.variable} font-sans antialiased bg-black text-white`}
+      >
+        {children}
+        <ThemeMusic />
         <ServiceWorkerRegistration />
       </body>
     </html>
