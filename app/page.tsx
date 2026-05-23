@@ -221,7 +221,7 @@ export default async function Home() {
           />
           <ModeTile
             href="/competitive/daily"
-            badge={`1 SHOT · ${data.dailyResetIn} LEFT`}
+            badge={`${data.dailyResetIn} LEFT`}
             name="Daily"
             sub={<>today&apos;s puzzle · 30-day mean ranks</>}
             cta="play →"
