@@ -98,13 +98,6 @@ export function PostRoundSummary({ result, onPlayAgain }: Props) {
       <p className="font-mono text-[10px] tracking-[0.18em] text-white/30 mt-8 zp-fade zp-fade-5">
         or press Enter
       </p>
-
-      <Link
-        href="/competitive/ranked"
-        className="absolute bottom-6 font-mono text-[10px] tracking-[0.18em] text-white/30 hover:text-white/65 uppercase transition-colors whitespace-nowrap zp-fade zp-fade-5"
-      >
-        track against friends →
-      </Link>
     </div>
   );
 }
