@@ -11,6 +11,12 @@ import {
   type SaveMode,
 } from "@/lib/practice-stats";
 import { emptyTagStats, type TagStats } from "@/lib/drill/round-analytics";
+import {
+  isPracticeMode,
+  syncPracticeBatch,
+  syncPracticeRun,
+} from "@/lib/practice-sync";
+import { createClient } from "@/lib/supabase/client";
 
 const VALID_MODES: ReadonlySet<SaveMode> = new Set([
   "classic",
@@ -377,6 +383,20 @@ export type SaveRunOptions = {
   runId?: string;
 };
 
+/** UUID generator — wraps crypto.randomUUID() with a fallback for ancient browsers. */
+function makeUuid(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // Very rare fallback. Not cryptographically strong, but uniqueness is
+  // good enough for a per-device run id.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 /**
  * Persist a single round. Computes the per-op + mul-fact + per-tag rollup
  * at save time (cheap — re-derives ~80 problems from the seed).
@@ -384,9 +404,13 @@ export type SaveRunOptions = {
  * `durationMs` should be the round's actual duration so the late-round
  * fatigue filter inside the tag rollup uses the right cutoff.
  *
- * `opts.runId` carries the server-issued run id for ranked/daily rows so
- * the recent-runs list on /me can deep-link to /r/[run_id]. Practice modes
- * leave it undefined.
+ * `opts.runId` is the server-issued run id for ranked/daily rows; for
+ * practice modes we generate a client-side UUID so the row can be synced
+ * (and idempotently re-synced) to /api/practice/sync.
+ *
+ * For practice rows, this also kicks off a fire-and-forget POST to the
+ * sync endpoint when the user is signed in — failures are swallowed and
+ * caught up by the next reconcile pass on /me.
  */
 export function saveRun(
   mode: SaveMode,
@@ -397,6 +421,7 @@ export function saveRun(
   opts: SaveRunOptions = {},
 ): StoredRun {
   const rollup = rollupRoundResult(seed, generatorConfig, result, durationMs);
+  const runId = opts.runId ?? (isPracticeMode(mode) ? makeUuid() : undefined);
   const stored: StoredRun = {
     v: 4,
     mode,
@@ -410,11 +435,79 @@ export function saveRun(
     mulFacts: rollup.mulFacts,
     byTag: rollup.byTag,
     tagVersion: rollup.tagVersion,
-    runId: opts.runId,
+    runId,
   };
   const next = [...getHistory(), stored];
   writeHistory(next);
+  // Practice rows: mirror to the server if signed in. Best-effort, no await.
+  if (isPracticeMode(mode)) {
+    void syncPracticeRun(stored);
+  }
   return stored;
+}
+
+const BACKFILL_FLAG_PREFIX = "zetamax:practice-synced-";
+
+/**
+ * Replace the on-disk history with the given rows. Used by the backfill
+ * pass when it stamps fresh UUIDs onto legacy practice rows that lacked
+ * runIds.
+ */
+function replaceHistory(rows: StoredRun[]): void {
+  writeHistory(rows);
+}
+
+/**
+ * One-shot per-device, per-user backfill. The first time a signed-in user
+ * loads /me on this device:
+ *   1. Walk local history; stamp a UUID onto any practice row missing runId.
+ *   2. Persist the updated rows back to localStorage so future syncs are
+ *      idempotent.
+ *   3. Batch-push every practice row to /api/practice/sync.
+ *   4. Flip the per-user flag (`zetamax:practice-synced-{userId}`) so this
+ *      doesn't run again on this device.
+ *
+ * Safe to call any time — anonymous users short-circuit, and the flag
+ * makes it a no-op after the first successful run.
+ */
+export async function ensurePracticeBackfilled(): Promise<{
+  rows: StoredRun[];
+  changed: boolean;
+}> {
+  const rowsBefore = getHistory();
+  if (typeof window === "undefined") {
+    return { rows: rowsBefore, changed: false };
+  }
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { rows: rowsBefore, changed: false };
+
+    const flagKey = BACKFILL_FLAG_PREFIX + user.id;
+    if (window.localStorage.getItem(flagKey) === "1") {
+      return { rows: rowsBefore, changed: false };
+    }
+
+    // Stamp UUIDs onto legacy practice rows that don't have one yet.
+    let changed = false;
+    const updated = rowsBefore.map((row) => {
+      if (isPracticeMode(row.mode) && !row.runId) {
+        changed = true;
+        return { ...row, runId: makeUuid() };
+      }
+      return row;
+    });
+    if (changed) replaceHistory(updated);
+
+    await syncPracticeBatch(updated.filter((r) => isPracticeMode(r.mode)));
+
+    window.localStorage.setItem(flagKey, "1");
+    return { rows: updated, changed };
+  } catch {
+    return { rows: rowsBefore, changed: false };
+  }
 }
 
 /** Wipe stored history (all schema versions). */
