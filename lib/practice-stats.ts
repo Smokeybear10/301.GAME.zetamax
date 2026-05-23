@@ -174,9 +174,11 @@ export function rollupRoundResult(
  * normalizes v1/v2/v3 rows into this shape. Migrated rows fill missing fields
  * with sensible defaults (byTag={}, tagVersion=0, runId=undefined).
  *
- * v4 adds `runId` — present for ranked/daily rows (the server-issued id, so
- * recent-runs UI can deep-link to `/r/[run_id]`). Practice rows leave it
- * undefined; they have no server-side permalink.
+ * v4 adds `runId`. For ranked/daily it's the server-issued id (so the
+ * recent-runs UI can deep-link to `/r/[run_id]`). For practice modes it's a
+ * client-generated UUID assigned at save time so the row can be synced to
+ * the server (idempotent upsert keyed on this id). Legacy rows migrated
+ * forward from v1/v2/v3 have it undefined.
  */
 export type RunRow = {
   v: 4;

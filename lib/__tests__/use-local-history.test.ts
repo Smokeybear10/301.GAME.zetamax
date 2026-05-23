@@ -107,7 +107,11 @@ describe("saveRun", () => {
     const saved = saveRun("classic", "rt-1", ZETAMAC_DEFAULTS, result, DURATION_MS);
     expect(saved.v).toBe(4);
     expect(saved.mode).toBe("classic");
-    expect(saved.runId).toBeUndefined();
+    // Practice rows now get a client-generated UUID so they can be synced
+    // to the server (idempotent upsert keyed on this id).
+    expect(saved.runId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
     expect(saved.score).toBe(20);
     expect(saved.problemsCorrect).toBe(20);
     expect(saved.tagVersion).toBe(TAG_VERSION);
@@ -381,7 +385,7 @@ describe("saveRun runId option", () => {
     expect(history[0].runId).toBe("11111111-2222-3333-4444-555555555555");
   });
 
-  it("leaves runId undefined when omitted (practice modes)", () => {
+  it("auto-generates a UUID for practice modes when runId is omitted", () => {
     const saved = saveRun(
       "classic",
       "rid-2",
@@ -389,7 +393,9 @@ describe("saveRun runId option", () => {
       makeResult("rid-2", 3),
       DURATION_MS,
     );
-    expect(saved.runId).toBeUndefined();
+    expect(saved.runId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
   });
 });
 
