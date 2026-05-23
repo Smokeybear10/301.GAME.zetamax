@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KEYBIND_DEFAULTS,
   ZETAMAC_DEFAULTS,
+  currentStreak,
   type GeneratorConfig,
   type Problem,
   type RoundResult,
@@ -45,6 +46,7 @@ import { labelFor } from "@/app/me/todays-focus";
 import { ZpButton } from "@/components/ui/zp-button";
 import { AnimatedScore } from "@/app/_components/animated-score";
 import { AnimatedProblem } from "@/app/_components/animated-problem";
+import { StreakIndicator } from "@/app/_components/streak-indicator";
 import { MobileKeypad } from "../classic/mobile-keypad";
 import { LearnPostRound } from "./learn-post-round";
 
@@ -294,6 +296,10 @@ function ActiveView({
           className={
             state.status === "running" ? "text-white" : "text-white/42"
           }
+        />
+        <StreakIndicator
+          streak={currentStreak(state.events, state.durationMs - state.msRemaining)}
+          active={state.status === "running"}
         />
         <span
           className={
