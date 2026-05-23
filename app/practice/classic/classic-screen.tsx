@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { Problem, RoundResult } from "@/lib/drill";
+import { currentStreak, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { saveRun } from "@/lib/use-local-history";
 import { usePracticeConfig } from "@/lib/use-practice-config";
 import { ZpButton } from "@/components/ui/zp-button";
 import { AnimatedScore } from "@/app/_components/animated-score";
 import { AnimatedProblem } from "@/app/_components/animated-problem";
+import { StreakIndicator } from "@/app/_components/streak-indicator";
 import { MobileKeypad } from "./mobile-keypad";
 import { PostRoundSummary } from "./post-round-summary";
 import { SettingsModal } from "./settings-modal";
@@ -105,11 +106,15 @@ export function ClassicScreen() {
 
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
-      {/* Top strip — score + timer, both faint when idle */}
+      {/* Top strip — score · streak · timer, all faint when idle */}
       <header className="flex justify-between items-center px-8 pt-8 font-mono text-sm font-light tabular-nums">
         <AnimatedScore
           value={state.score}
           className={state.status === "running" ? "text-white" : "text-white/42"}
+        />
+        <StreakIndicator
+          streak={currentStreak(state.events, state.durationMs - state.msRemaining)}
+          active={state.status === "running"}
         />
         <span className={state.status === "running" ? "text-white" : "text-white/42"}>
           {formatTime(state.msRemaining)}

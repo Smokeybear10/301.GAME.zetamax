@@ -22,6 +22,7 @@ export type {
 } from "./config";
 export type { TagKey, SkillTag, PatternTag } from "./derive-tags";
 export { deriveTags, TAG_VERSION } from "./derive-tags";
+export { currentStreak, STREAK_WINDOW_MS } from "./streak";
 export type {
   Op,
   Problem,
