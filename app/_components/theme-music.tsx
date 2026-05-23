@@ -28,12 +28,14 @@ export function ThemeMusic() {
     setHydrated(true);
   }, []);
 
-  // Drive the audio element from state.
+  // Drive the audio element from state. `loop` is set on the element AND
+  // here in JS as belt-and-suspenders — some browsers honor only one.
   useEffect(() => {
     if (!hydrated) return;
     const el = audioRef.current;
     if (!el) return;
     el.volume = TRACK_VOLUME;
+    el.loop = true;
     if (on) {
       el.play().catch(() => {
         // Autoplay blocked. Reset state so the toggle reflects reality.
@@ -66,7 +68,7 @@ export function ThemeMusic() {
         onClick={toggle}
         aria-pressed={on}
         aria-label={on ? "Mute theme music" : "Play theme music"}
-        className="fixed top-4 right-4 z-50 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase border border-white/15 text-white/65 hover:text-white hover:border-white/40 bg-black/40 backdrop-blur-sm transition-colors"
+        className="fixed bottom-4 right-4 z-50 px-3 py-1.5 font-mono text-[10px] tracking-[0.18em] uppercase border border-white/15 text-white/65 hover:text-white hover:border-white/40 bg-black/40 backdrop-blur-sm transition-colors"
       >
         {on ? "♪ on" : "♪ off"}
       </button>
