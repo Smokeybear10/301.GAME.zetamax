@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ZETAMAC_DEFAULTS, currentStreak, type Problem, type RoundResult } from "@/lib/drill";
+import { ZETAMAC_DEFAULTS, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
-import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import { saveRun } from "@/lib/use-local-history";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
 import { ZpButton } from "@/components/ui/zp-button";
@@ -59,8 +58,6 @@ function RaceActive({ opponent }: { opponent: Opponent }) {
     ZETAMAC_DEFAULTS,
     KEYBINDS,
   );
-  const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
-  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative typed-answer update (matches ranked-screen pattern).
   useEffect(() => {
