@@ -37,14 +37,17 @@ const STEM_URLS: Record<Stem, string> = {
 export const LOBBY_STEMS: readonly Stem[] = ["synth"] as const;
 
 /**
- * Streak-driven tier ladder for drill screens. Each entry adds its stem to
- * the active set once the player's streak crosses the threshold. Thresholds
- * are "consecutive correct answers, each submitted within 2s of the
- * previous" — matches the visible streak counter.
+ * Drill tier ladder. Each entry adds its stem to the active set once the
+ * player's PEAK streak OR cumulative correct answers (this round) crosses
+ * the threshold — whichever comes first. Once a tier is earned it stays
+ * for the round (audio ratchets up only).
  *
- * Backing vocals enter early (streak 6) so the song gets vocal warmth
- * without giving away the lead — the full lead vocal remains the peak
- * reward at streak 15.
+ * Two paths, same numbers: bursty players reach tiers via streak (locking
+ * in fast rhythmic flow); steady players reach the same tiers via score
+ * accumulation (so a slower, accurate driller still hears the full song).
+ *
+ * Backing vocals enter early (tier 6) for vocal warmth; lead vocals stay
+ * at tier 15 as the peak reward.
  */
 const DRILL_TIERS: ReadonlyArray<{ threshold: number; stem: Stem }> = [
   { threshold: 0, stem: "synth" },
@@ -56,8 +59,18 @@ const DRILL_TIERS: ReadonlyArray<{ threshold: number; stem: Stem }> = [
   { threshold: 15, stem: "vocals" },
 ];
 
-export function activeStemsForStreak(streak: number): Stem[] {
-  return DRILL_TIERS.filter((t) => streak >= t.threshold).map((t) => t.stem);
+/**
+ * Tier set unlocked by the higher of peakStreak and score (whichever is
+ * further along the ladder). Both metrics ratchet up monotonically within
+ * a round and reset between rounds, so this naturally implements the
+ * "earn it and keep it" behavior.
+ */
+export function activeStemsForPlay(
+  peakStreak: number,
+  score: number,
+): Stem[] {
+  const m = Math.max(peakStreak, score);
+  return DRILL_TIERS.filter((t) => m >= t.threshold).map((t) => t.stem);
 }
 
 const FADE_IN_MS = 600;

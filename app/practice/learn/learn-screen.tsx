@@ -290,7 +290,7 @@ function ActiveView({
   }, [state.status, drill, seed, generatorConfig, onSaved]);
 
   const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
-  useStreakBroadcast(streak, state.status === "running");
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">

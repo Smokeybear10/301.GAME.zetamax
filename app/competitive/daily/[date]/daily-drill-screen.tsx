@@ -142,7 +142,7 @@ export function DailyDrillScreen({ date }: { date: string }) {
 
   const elapsedMs = durationMs - state.msRemaining;
   const streak = currentStreak(state.events, elapsedMs);
-  useStreakBroadcast(streak, state.status === "running");
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative typed answer write
   useEffect(() => {
