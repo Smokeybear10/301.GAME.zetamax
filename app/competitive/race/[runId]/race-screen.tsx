@@ -60,7 +60,7 @@ function RaceActive({ opponent }: { opponent: Opponent }) {
     KEYBINDS,
   );
   const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
-  useStreakBroadcast(streak, state.status === "running");
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative typed-answer update (matches ranked-screen pattern).
   useEffect(() => {
