@@ -3,25 +3,49 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  DRILL_STEMS,
+  activeStemsForPlay,
   LayeredMixer,
   LOBBY_STEMS,
   preloadStems,
+  type Stem,
 } from "@/lib/audio/layered-mixer";
 
 const STORAGE_KEY = "zetamax:music-on";
 
 const DRILL_ROUTE_RE = /^\/(practice\/(classic|learn)|competitive\/(ranked|daily|race))/;
 
-function stemsForRoute(pathname: string) {
-  return DRILL_ROUTE_RE.test(pathname) ? DRILL_STEMS : LOBBY_STEMS;
+function isDrillRoute(pathname: string): boolean {
+  return DRILL_ROUTE_RE.test(pathname);
 }
 
+function computeStems(
+  pathname: string,
+  isRunning: boolean,
+  peakStreak: number,
+  score: number,
+): readonly Stem[] {
+  if (isDrillRoute(pathname) && isRunning) {
+    return activeStemsForPlay(peakStreak, score);
+  }
+  return LOBBY_STEMS;
+}
+
+type StreakDetail = { streak: number; score: number; active: boolean };
+
 /**
- * Persistent music toggle. One AudioContext for the whole session, all 7
- * stems run phase-locked. Lobby routes hear LOBBY_STEMS (synth + guitar);
- * drill routes hear DRILL_STEMS (all 7). Crossfade on route change keeps
- * the song continuous — no gap, no restart.
+ * Persistent music toggle. One AudioContext, all 7 stems run phase-locked.
+ * Stem mix depends on route + drill state:
+ *
+ *   - Lobby / drill-idle / drill-ended  → LOBBY_STEMS (synth + guitar)
+ *   - Drill running                     → activeStemsForPlay(peak, score)
+ *
+ * Peak streak and cumulative score ratchet up only — once a tier is
+ * earned, that stem stays in for the round. Round end (active flips
+ * false) or leaving the drill route resets both metrics and falls back
+ * to LOBBY_STEMS.
+ *
+ * Route changes are handled by crossfade (mixer.setActive) only — never
+ * a restart. Sources keep playing in phase, gains ramp.
  *
  * Default off — browsers block autoplay without a user gesture.
  */
@@ -30,6 +54,15 @@ export function ThemeMusic() {
   const [on, setOn] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const mixerRef = useRef<LayeredMixer | null>(null);
+
+  // Live state used by the streak handler + crossfade effects. Refs (not
+  // useState) because we don't want re-renders on every streak tick; we
+  // just need to read the latest values when an event fires.
+  const peakStreakRef = useRef(0);
+  const scoreRef = useRef(0);
+  const isRunningRef = useRef(false);
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   // Hydrate persisted on/off from localStorage.
   useEffect(() => {
@@ -43,46 +76,84 @@ export function ThemeMusic() {
   }, []);
 
   // Warm the jsDelivr cache on mount so the first ♪-on click doesn't pay
-  // ~56 MB of cross-origin transfers before any audio plays. Best-effort —
-  // failure here just means the user falls back to the slow path.
+  // ~56 MB of cross-origin transfers before any audio plays.
   useEffect(() => {
     preloadStems();
   }, []);
 
-  // React to on/off toggle.
+  // React to on/off toggle. Does NOT depend on pathname/streak — those are
+  // handled by dedicated effects below that crossfade without restarting.
   useEffect(() => {
     if (!hydrated) return;
     const mixer = mixerRef.current;
     if (!mixer) return;
     if (on) {
-      mixer.start(stemsForRoute(pathname)).catch(() => {
-        // Autoplay blocked or load failure — flip the toggle back off.
-        setOn(false);
-      });
+      const initial = computeStems(
+        pathnameRef.current,
+        isRunningRef.current,
+        peakStreakRef.current,
+        scoreRef.current,
+      );
+      mixer.start(initial).catch(() => setOn(false));
     } else {
       mixer.stop();
     }
-    // Intentionally excludes `pathname` — route changes are handled by the
-    // dedicated effect below, which crossfades stems without restarting
-    // playback. Including pathname here would re-await start() on every
-    // navigation and undo the crossfade.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [on, hydrated]);
 
-  // Route change → crossfade to the right stem set. No restart, no gap,
-  // no autoplay re-prompt — just gain ramps on the existing sources.
+  // Route change → crossfade. Leaving a drill route resets the ratchet so
+  // returning to a drill starts from synth-only again.
   useEffect(() => {
     if (!hydrated || !on) return;
+    if (!isDrillRoute(pathname)) {
+      peakStreakRef.current = 0;
+      scoreRef.current = 0;
+      isRunningRef.current = false;
+    }
     const mixer = mixerRef.current;
     if (!mixer || !mixer.isPlaying()) return;
-    mixer.setActive(stemsForRoute(pathname));
+    mixer.setActive(
+      computeStems(
+        pathname,
+        isRunningRef.current,
+        peakStreakRef.current,
+        scoreRef.current,
+      ),
+    );
   }, [pathname, on, hydrated]);
 
-  // Resume the AudioContext when the tab regains focus. Browsers (especially
-  // Safari) suspend AudioContext when the tab loses focus or during SPA
-  // route transitions; without an explicit resume the music stays silent
-  // even after the tab comes back. Belt-and-suspenders alongside the
-  // statechange handler in LayeredMixer.ensureUserGestureContext.
+  // Streak broadcasts from drill screens drive the ratchet.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<StreakDetail>).detail;
+      if (!detail) return;
+      if (!detail.active) {
+        peakStreakRef.current = 0;
+        scoreRef.current = 0;
+      } else {
+        peakStreakRef.current = Math.max(
+          peakStreakRef.current,
+          detail.streak,
+        );
+        scoreRef.current = Math.max(scoreRef.current, detail.score);
+      }
+      isRunningRef.current = detail.active;
+      const mixer = mixerRef.current;
+      if (!mixer || !mixer.isPlaying()) return;
+      mixer.setActive(
+        computeStems(
+          pathnameRef.current,
+          isRunningRef.current,
+          peakStreakRef.current,
+          scoreRef.current,
+        ),
+      );
+    };
+    window.addEventListener("zetamax:streak", handler);
+    return () => window.removeEventListener("zetamax:streak", handler);
+  }, []);
+
+  // Resume the AudioContext when the tab regains focus — Safari especially
+  // suspends on tab-switch and won't auto-recover otherwise.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
@@ -108,10 +179,9 @@ export function ThemeMusic() {
 
   const toggle = () => {
     // CRITICAL: create + resume the AudioContext SYNCHRONOUSLY here, in the
-    // user-gesture context. Doing it later (inside the on/off useEffect
-    // chain) means the gesture has already expired by the time
-    // `new AudioContext()` runs, and Chrome/Safari leave the context
-    // suspended forever — toggle shows "on" but no audio ever plays.
+    // user-gesture context. Doing it later (inside the on/off useEffect)
+    // means the gesture has already expired by the time `new AudioContext()`
+    // runs, and Chrome/Safari leave the context suspended forever.
     if (!mixerRef.current) {
       mixerRef.current = new LayeredMixer();
     }

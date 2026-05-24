@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ZETAMAC_DEFAULTS, type Problem, type RoundResult } from "@/lib/drill";
+import { ZETAMAC_DEFAULTS, currentStreak, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
+import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import { startRun } from "@/lib/runs-api";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
 import { ZpButton } from "@/components/ui/zp-button";
@@ -88,6 +89,8 @@ export function RankedScreen() {
   const durationMs = start.phase === "ready" ? start.durationMs : 120_000;
 
   const { state, drill } = useDrill(seed, durationMs, ZETAMAC_DEFAULTS, KEYBINDS);
+  const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative DOM update for the typed answer (bypasses React reconciliation).
   useEffect(() => {
