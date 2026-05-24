@@ -47,8 +47,10 @@ export function preloadStems(): void {
   });
 }
 
-/** Stems active on the lobby / non-drill routes. Pure pad — mostly ambient. */
-export const LOBBY_STEMS: readonly Stem[] = ["synth"] as const;
+/** Stems active on the lobby / non-drill routes. Pad + guitar + backing — full
+ * enough to be obviously playing, sparse enough that the drill ratchet still
+ * earns its drama once bass / drums / vocals enter. */
+export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar", "backing-vocals"] as const;
 
 /**
  * Drill tier ladder. Each entry adds its stem to the active set once the
