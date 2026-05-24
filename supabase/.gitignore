@@ -1,3 +1,12 @@
 # Supabase CLI artifacts (when you install it later)
 .branches
 .temp
+
+# Supabase
+.branches
+.temp
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
