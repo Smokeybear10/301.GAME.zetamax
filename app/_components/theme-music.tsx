@@ -50,6 +50,26 @@ export function ThemeMusic() {
     }
   }, [on, hydrated]);
 
+  // Resume the AudioContext when the tab regains focus. Browsers (especially
+  // Safari) suspend AudioContext when the tab loses focus or during SPA
+  // route transitions; without an explicit resume the music stays silent
+  // even after the tab comes back. Belt-and-suspenders alongside the
+  // statechange handler in LayeredMixer.ensureUserGestureContext.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      const mixer = mixerRef.current;
+      if (!mixer || !on) return;
+      mixer.ensureUserGestureContext();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [on]);
+
   // Permanent teardown on unmount.
   useEffect(() => {
     return () => {
