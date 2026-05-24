@@ -35,6 +35,7 @@ import {
   type TagKey,
 } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
+import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import {
   FOCUS_PARAMS,
   topNWeakTags,
@@ -288,6 +289,9 @@ function ActiveView({
     }
   }, [state.status, drill, seed, generatorConfig, onSaved]);
 
+  const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
+  useStreakBroadcast(streak, state.status === "running");
+
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
       <header className="flex justify-between items-center px-8 pt-8 font-mono text-sm font-light tabular-nums">
@@ -297,10 +301,7 @@ function ActiveView({
             state.status === "running" ? "text-white" : "text-white/42"
           }
         />
-        <StreakIndicator
-          streak={currentStreak(state.events, state.durationMs - state.msRemaining)}
-          active={state.status === "running"}
-        />
+        <StreakIndicator streak={streak} active={state.status === "running"} />
         <span
           className={
             state.status === "running" ? "text-white" : "text-white/42"
@@ -353,18 +354,14 @@ function ActiveView({
         }}
       />
 
-      {state.status !== "running" && (
-        <ZpButton asChild variant="floating">
-          <Link
-            href="/"
-            aria-label="Back to home"
-            title="Home"
-          >
-            <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">home</span>
-          </Link>
-        </ZpButton>
-      )}
+      {/* Home — always visible, including mid-round, so the user can bail
+          out to the menu without finishing. */}
+      <ZpButton asChild variant="floating">
+        <Link href="/" aria-label="Back to home" title="Home">
+          <span aria-hidden="true">←</span>
+          <span className="hidden sm:inline">home</span>
+        </Link>
+      </ZpButton>
 
       {state.status === "ended" && savedRow && (
         <LearnPostRound
