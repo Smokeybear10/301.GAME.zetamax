@@ -6,12 +6,10 @@ import {
   DAILY_DURATION_MS,
   DAILY_TARGET_COUNT,
   ZETAMAC_DEFAULTS,
-  currentStreak,
   type Problem,
   type RoundResult,
 } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
-import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import { startRun } from "@/lib/runs-api";
 import { createClient } from "@/lib/supabase/client";
 import { MobileKeypad } from "@/app/practice/classic/mobile-keypad";
@@ -141,8 +139,6 @@ export function DailyDrillScreen({ date }: { date: string }) {
   );
 
   const elapsedMs = durationMs - state.msRemaining;
-  const streak = currentStreak(state.events, elapsedMs);
-  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative typed answer write
   useEffect(() => {

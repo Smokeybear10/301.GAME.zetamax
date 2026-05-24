@@ -6,7 +6,6 @@ import { currentStreak, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { saveRun } from "@/lib/use-local-history";
 import { usePracticeConfig } from "@/lib/use-practice-config";
-import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import { ZpButton } from "@/components/ui/zp-button";
 import { AnimatedScore } from "@/app/_components/animated-score";
 import { AnimatedProblem } from "@/app/_components/animated-problem";
@@ -105,7 +104,6 @@ export function ClassicScreen() {
 
   const settingsAccessible = state.status !== "running";
   const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
-  useStreakBroadcast(streak, state.score, state.status === "running");
 
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
