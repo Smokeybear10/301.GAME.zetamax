@@ -54,8 +54,40 @@ const MASTER_VOLUME = 0.65;
 /** Stems active on the lobby / non-drill routes — pad + guitar, no vocals. */
 export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar"] as const;
 
-/** Stems active on drill routes — the full song. */
-export const DRILL_STEMS: readonly Stem[] = STEMS;
+/**
+ * Drill tier ladder. Each entry adds its stem to the active set once the
+ * player's PEAK streak OR cumulative correct answers (this round) crosses
+ * the threshold — whichever comes first. Once a tier is earned it stays
+ * for the round (peak ratchets up, never down).
+ *
+ * Drill starts at just synth — strips the guitar out of the lobby mix to
+ * make the bass / drums / etc. arrivals feel like real entries. Lead vocals
+ * (tier 15) are the peak reward, only ever heard at sustained high streak
+ * or score.
+ */
+const DRILL_TIERS: ReadonlyArray<{ threshold: number; stem: Stem }> = [
+  { threshold: 0, stem: "synth" },
+  { threshold: 2, stem: "bass" },
+  { threshold: 4, stem: "drums" },
+  { threshold: 6, stem: "backing-vocals" },
+  { threshold: 8, stem: "percussion" },
+  { threshold: 11, stem: "guitar" },
+  { threshold: 15, stem: "vocals" },
+];
+
+/**
+ * Tier set unlocked by the higher of peakStreak and score. Both metrics
+ * ratchet up monotonically within a round and reset between rounds, so
+ * this naturally implements "earn it and keep it" — bursty players hit
+ * tiers via streak, steady players via cumulative score.
+ */
+export function activeStemsForPlay(
+  peakStreak: number,
+  score: number,
+): Stem[] {
+  const m = Math.max(peakStreak, score);
+  return DRILL_TIERS.filter((t) => m >= t.threshold).map((t) => t.stem);
+}
 
 export class LayeredMixer {
   private ctx: AudioContext | null = null;

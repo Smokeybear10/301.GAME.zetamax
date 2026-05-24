@@ -35,6 +35,7 @@ import {
   type TagKey,
 } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
+import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import {
   FOCUS_PARAMS,
   topNWeakTags,
@@ -289,6 +290,7 @@ function ActiveView({
   }, [state.status, drill, seed, generatorConfig, onSaved]);
 
   const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
