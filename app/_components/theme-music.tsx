@@ -6,6 +6,7 @@ import {
   activeStemsForPlay,
   LayeredMixer,
   LOBBY_STEMS,
+  preloadStems,
   type Stem,
 } from "@/lib/audio/layered-mixer";
 
@@ -71,6 +72,13 @@ export function ThemeMusic() {
       // ignore
     }
     setHydrated(true);
+  }, []);
+
+  // Warm the jsDelivr cache on mount so the first ♪-on click doesn't pay
+  // ~56 MB of cross-origin transfers before any audio plays. Best-effort —
+  // failure here just means the user falls back to the slow path.
+  useEffect(() => {
+    preloadStems();
   }, []);
 
   // Listen for streak broadcasts from drill screens.
