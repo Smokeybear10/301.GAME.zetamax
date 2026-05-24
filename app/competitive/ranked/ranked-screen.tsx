@@ -90,7 +90,7 @@ export function RankedScreen() {
 
   const { state, drill } = useDrill(seed, durationMs, ZETAMAC_DEFAULTS, KEYBINDS);
   const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
-  useStreakBroadcast(streak, state.status === "running");
+  useStreakBroadcast(streak, state.score, state.status === "running");
 
   // Imperative DOM update for the typed answer (bypasses React reconciliation).
   useEffect(() => {

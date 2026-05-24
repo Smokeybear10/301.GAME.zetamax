@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  activeStemsForStreak,
+  activeStemsForPlay,
   LayeredMixer,
   LOBBY_STEMS,
   type Stem,
@@ -17,7 +17,7 @@ function isDrillRoute(pathname: string): boolean {
   return DRILL_ROUTE_RE.test(pathname);
 }
 
-type StreakDetail = { streak: number; active: boolean };
+type StreakDetail = { streak: number; score: number; active: boolean };
 
 /**
  * Persistent layered-music toggle. One AudioContext for the whole session,
@@ -35,20 +35,27 @@ export function ThemeMusic() {
   const [on, setOn] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const mixerRef = useRef<LayeredMixer | null>(null);
-  const streakRef = useRef(0);
+  // Audio ratchets up only, never down. Track the round's peak streak AND
+  // current score; the mixer activates tiers based on whichever metric is
+  // further along. Both reset when active flips false (round end / leave).
+  //
+  // The visible streak counter still uses the live (decaying) streak — only
+  // the audio is sticky.
+  const peakStreakRef = useRef(0);
+  const scoreRef = useRef(0);
   const drillActiveRef = useRef(false);
   const pathnameRef = useRef(pathname);
 
   pathnameRef.current = pathname;
 
-  // Recompute the active stem set based on current route + streak state.
+  // Recompute the active stem set based on current route + peak streak + score.
   const applyStems = useCallback(() => {
     const mixer = mixerRef.current;
     if (!mixer || !mixer.isPlaying()) return;
     const path = pathnameRef.current;
     let stems: readonly Stem[];
     if (isDrillRoute(path) && drillActiveRef.current) {
-      stems = activeStemsForStreak(streakRef.current);
+      stems = activeStemsForPlay(peakStreakRef.current, scoreRef.current);
     } else {
       stems = LOBBY_STEMS;
     }
@@ -71,7 +78,19 @@ export function ThemeMusic() {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<StreakDetail>).detail;
       if (!detail) return;
-      streakRef.current = detail.streak;
+      if (!detail.active) {
+        // Round ended (or component unmounted). Reset the ratchet.
+        peakStreakRef.current = 0;
+        scoreRef.current = 0;
+      } else {
+        // Ratchet up. PeakStreak never goes down within a round; score is
+        // monotonic in Zetamac too, but max() is cheap insurance.
+        peakStreakRef.current = Math.max(
+          peakStreakRef.current,
+          detail.streak,
+        );
+        scoreRef.current = Math.max(scoreRef.current, detail.score);
+      }
       drillActiveRef.current = detail.active;
       applyStems();
     };
@@ -79,12 +98,13 @@ export function ThemeMusic() {
     return () => window.removeEventListener("zetamax:streak", handler);
   }, [applyStems]);
 
-  // React to route changes — leaving a drill resets streak state so the
+  // React to route changes — leaving a drill resets the ratchet so the
   // lobby mix takes over immediately.
   useEffect(() => {
     if (!isDrillRoute(pathname)) {
       drillActiveRef.current = false;
-      streakRef.current = 0;
+      peakStreakRef.current = 0;
+      scoreRef.current = 0;
     }
     applyStems();
   }, [pathname, applyStems]);
@@ -98,7 +118,9 @@ export function ThemeMusic() {
         if (!mixerRef.current) {
           mixerRef.current = new LayeredMixer();
         }
-        const initial = isDrillRoute(pathname) ? activeStemsForStreak(0) : LOBBY_STEMS;
+        const initial = isDrillRoute(pathname)
+          ? activeStemsForPlay(peakStreakRef.current, scoreRef.current)
+          : LOBBY_STEMS;
         try {
           await mixerRef.current.start(initial);
           if (cancelled) {
