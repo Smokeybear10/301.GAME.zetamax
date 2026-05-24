@@ -33,6 +33,20 @@ const STEM_URLS: Record<Stem, string> = {
   vocals: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/vocals.mp3",
 };
 
+/**
+ * Warm the HTTP cache for every stem. Safe to call before any user gesture —
+ * no AudioContext required. Bytes land in the browser disk cache so the later
+ * mixer.start() fetches return locally instead of waiting on ~56 MB of
+ * cross-origin transfers from jsDelivr. Best-effort: network errors are
+ * swallowed because failing the preload should never break the page.
+ */
+export function preloadStems(): void {
+  if (typeof window === "undefined") return;
+  STEMS.forEach((stem) => {
+    void fetch(STEM_URLS[stem], { cache: "force-cache" }).catch(() => {});
+  });
+}
+
 /** Stems active on the lobby / non-drill routes. Pure pad — mostly ambient. */
 export const LOBBY_STEMS: readonly Stem[] = ["synth"] as const;
 
