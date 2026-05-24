@@ -86,6 +86,13 @@ export class LayeredMixer {
   private active: Set<Stem> = new Set();
   private playing = false;
   private loadPromise: Promise<void> | null = null;
+  // Reentrancy guard for start(). Multiple React effects can race to call
+  // start() before the first one finishes loading (e.g. pathname changes
+  // mid-load). Without this guard, each call creates a fresh set of
+  // BufferSourceNodes; the old ones keep playing on the AudioContext but
+  // get orphaned from `stemSources`, so the user hears the same stem
+  // twice at different positions. The promise serializes concurrent calls.
+  private startInFlight: Promise<void> | null = null;
   // Common loop length across all stems — the minimum buffer duration so
   // every source restarts on the same instant. Stems from Suno's exporter
   // are within a few ms of each other; without a shared loop point they
@@ -129,12 +136,31 @@ export class LayeredMixer {
    * Start playback with the given initial stem set. Creates the AudioContext
    * on first call (must be invoked from a user-gesture handler to satisfy
    * browser autoplay policy).
+   *
+   * Reentrancy-safe: if a previous start() is still loading buffers, this
+   * call awaits the in-flight load instead of starting a second set of
+   * BufferSourceNodes (which would orphan the first set on the context and
+   * the user would hear each stem twice at different positions).
    */
   async start(initialStems: readonly Stem[]): Promise<void> {
+    if (this.startInFlight) {
+      await this.startInFlight;
+      this.setActive(initialStems);
+      return;
+    }
     if (this.playing) {
       this.setActive(initialStems);
       return;
     }
+    this.startInFlight = this.beginPlayback(initialStems);
+    try {
+      await this.startInFlight;
+    } finally {
+      this.startInFlight = null;
+    }
+  }
+
+  private async beginPlayback(initialStems: readonly Stem[]): Promise<void> {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
@@ -145,6 +171,19 @@ export class LayeredMixer {
       await this.ctx.resume();
     }
     await this.load();
+
+    // Defensive cleanup — if any tracked sources are hanging around from a
+    // prior failed attempt, kill them before creating fresh ones. Untracked
+    // orphans (from a pre-fix race) will already have been collected when
+    // the AudioContext was torn down via stop()/destroy().
+    this.stemSources.forEach((src) => {
+      try {
+        src.stop();
+      } catch {
+        // already stopped
+      }
+    });
+    this.stemSources.clear();
 
     // Start every stem looped at the same instant so they stay phase-locked.
     // loopEnd is set to the shortest stem's duration so all sources wrap
