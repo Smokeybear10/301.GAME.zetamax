@@ -6,6 +6,7 @@ import { currentStreak, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
 import { saveRun } from "@/lib/use-local-history";
 import { usePracticeConfig } from "@/lib/use-practice-config";
+import { useStreakBroadcast } from "@/lib/use-streak-broadcast";
 import { ZpButton } from "@/components/ui/zp-button";
 import { AnimatedScore } from "@/app/_components/animated-score";
 import { AnimatedProblem } from "@/app/_components/animated-problem";
@@ -103,6 +104,8 @@ export function ClassicScreen() {
   }, [state.status, drill, seed, config.generator, config.durationMs]);
 
   const settingsAccessible = state.status !== "running";
+  const streak = currentStreak(state.events, state.durationMs - state.msRemaining);
+  useStreakBroadcast(streak, state.status === "running");
 
   return (
     <main className="fixed inset-0 bg-black text-white flex flex-col select-none antialiased">
@@ -113,7 +116,7 @@ export function ClassicScreen() {
           className={state.status === "running" ? "text-white" : "text-white/42"}
         />
         <StreakIndicator
-          streak={currentStreak(state.events, state.durationMs - state.msRemaining)}
+          streak={streak}
           active={state.status === "running"}
         />
         <span className={state.status === "running" ? "text-white" : "text-white/42"}>
@@ -165,31 +168,26 @@ export function ClassicScreen() {
         }}
       />
 
-      {/* Back link — up to the mode picker. Mirrors the settings chip on the
-          opposite side. Hidden during a running drill so it can't distract or
-          be mis-clicked. */}
-      {settingsAccessible && (
-        <ZpButton asChild variant="floating">
-          <Link
-            href="/"
-            aria-label="Back to home"
-            title="Home"
-          >
-            <span aria-hidden="true">←</span>
-            <span className="hidden sm:inline">home</span>
-          </Link>
-        </ZpButton>
-      )}
+      {/* Home — always visible, including mid-round, so the user can bail out
+          to the menu without finishing. Bottom-left on desktop, top-left on
+          mobile (the keypad takes the bottom). */}
+      <ZpButton asChild variant="floating">
+        <Link href="/" aria-label="Back to home" title="Home">
+          <span aria-hidden="true">←</span>
+          <span className="hidden sm:inline">home</span>
+        </Link>
+      </ZpButton>
 
-      {/* Settings — labeled chip, only visible when not drilling. Top-right on
-          mobile (where the keypad fills the bottom), bottom-right on desktop. */}
+      {/* Settings — stacks ABOVE home so the bottom-right corner stays free
+          for the global music toggle. Still gated by settingsAccessible so
+          config can't change mid-round. */}
       {settingsAccessible && (
         <ZpButton
           variant="floating"
           onClick={() => setShowSettings(true)}
           aria-label="Settings"
           title="Settings"
-          className="left-auto right-3 sm:left-auto sm:right-6"
+          className="top-16 sm:top-auto sm:bottom-20"
         >
           <SettingsIcon />
           <span className="hidden sm:inline">settings</span>
