@@ -51,6 +51,12 @@ const FADE_IN_MS = 600;
 const FADE_OUT_MS = 800;
 const MASTER_VOLUME = 0.65;
 
+/** Stems active on the lobby / non-drill routes — pad + guitar, no vocals. */
+export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar"] as const;
+
+/** Stems active on drill routes — the full song. */
+export const DRILL_STEMS: readonly Stem[] = STEMS;
+
 export class LayeredMixer {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
@@ -138,27 +144,27 @@ export class LayeredMixer {
   }
 
   /**
-   * Start playback. All stems play together in phase — there is no per-stem
-   * mixing or layering; on/off is the only control. Creates the AudioContext
-   * on first call (must be invoked from a user-gesture handler to satisfy
-   * browser autoplay policy).
+   * Start playback with the given stem set audible (others stay at gain 0,
+   * still playing in phase so they can fade in later without resyncing).
+   * Creates the AudioContext on first call (must be invoked from a
+   * user-gesture handler to satisfy browser autoplay policy).
    *
    * Reentrancy-safe: if a previous start() is still loading buffers, this
    * call awaits the in-flight load instead of starting a second set of
    * BufferSourceNodes (which would orphan the first set on the context and
    * the user would hear each stem twice at different positions).
    */
-  async start(): Promise<void> {
+  async start(activeStems: readonly Stem[]): Promise<void> {
     if (this.startInFlight) {
       await this.startInFlight;
-      this.fadeAllIn();
+      this.setActive(activeStems);
       return;
     }
     if (this.playing) {
-      this.fadeAllIn();
+      this.setActive(activeStems);
       return;
     }
-    this.startInFlight = this.beginPlayback();
+    this.startInFlight = this.beginPlayback(activeStems);
     try {
       await this.startInFlight;
     } finally {
@@ -166,7 +172,29 @@ export class LayeredMixer {
     }
   }
 
-  private async beginPlayback(): Promise<void> {
+  /**
+   * Crossfade to a new active stem set. Stems entering ramp up over
+   * FADE_IN_MS; stems leaving ramp down over FADE_OUT_MS. Stems already in
+   * the right state stay put (no-op ramp).
+   */
+  setActive(stems: readonly Stem[]): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.playing) return;
+    const wanted = new Set(stems);
+    const now = ctx.currentTime;
+    STEMS.forEach((stem) => {
+      const gain = this.stemGains.get(stem);
+      if (!gain) return;
+      const target = wanted.has(stem) ? 1 : 0;
+      const rampMs = wanted.has(stem) ? FADE_IN_MS : FADE_OUT_MS;
+      const current = gain.gain.value;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(current, now);
+      gain.gain.linearRampToValueAtTime(target, now + rampMs / 1000);
+    });
+  }
+
+  private async beginPlayback(activeStems: readonly Stem[]): Promise<void> {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
@@ -207,7 +235,7 @@ export class LayeredMixer {
       this.stemSources.set(stem, src);
     });
     this.playing = true;
-    this.fadeAllIn();
+    this.setActive(activeStems);
   }
 
   /**
@@ -234,21 +262,6 @@ export class LayeredMixer {
         });
       }, fadeMs + 50);
     }
-  }
-
-  /** Ramp every stem's gain up to 1 over FADE_IN_MS. */
-  private fadeAllIn(): void {
-    const ctx = this.ctx;
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    STEMS.forEach((stem) => {
-      const gain = this.stemGains.get(stem);
-      if (!gain) return;
-      const current = gain.gain.value;
-      gain.gain.cancelScheduledValues(now);
-      gain.gain.setValueAtTime(current, now);
-      gain.gain.linearRampToValueAtTime(1, now + FADE_IN_MS / 1000);
-    });
   }
 
   /** Ramp every stem's gain down to 0 over FADE_OUT_MS. */
