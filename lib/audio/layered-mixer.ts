@@ -47,50 +47,8 @@ export function preloadStems(): void {
   });
 }
 
-/** Stems active on the lobby / non-drill routes. Pad + guitar — audible
- * presence without any vocals, so backing-vocals AND lead vocals stay
- * exclusive to the drill ratchet (entering at streak/score 6 and 15). */
-export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar"] as const;
-
-/**
- * Drill tier ladder. Each entry adds its stem to the active set once the
- * player's PEAK streak OR cumulative correct answers (this round) crosses
- * the threshold — whichever comes first. Once a tier is earned it stays
- * for the round (audio ratchets up only).
- *
- * Two paths, same numbers: bursty players reach tiers via streak (locking
- * in fast rhythmic flow); steady players reach the same tiers via score
- * accumulation (so a slower, accurate driller still hears the full song).
- *
- * Backing vocals enter early (tier 6) for vocal warmth; lead vocals stay
- * at tier 15 as the peak reward.
- */
-const DRILL_TIERS: ReadonlyArray<{ threshold: number; stem: Stem }> = [
-  { threshold: 0, stem: "synth" },
-  { threshold: 2, stem: "bass" },
-  { threshold: 4, stem: "drums" },
-  { threshold: 6, stem: "backing-vocals" },
-  { threshold: 8, stem: "percussion" },
-  { threshold: 11, stem: "guitar" },
-  { threshold: 15, stem: "vocals" },
-];
-
-/**
- * Tier set unlocked by the higher of peakStreak and score (whichever is
- * further along the ladder). Both metrics ratchet up monotonically within
- * a round and reset between rounds, so this naturally implements the
- * "earn it and keep it" behavior.
- */
-export function activeStemsForPlay(
-  peakStreak: number,
-  score: number,
-): Stem[] {
-  const m = Math.max(peakStreak, score);
-  return DRILL_TIERS.filter((t) => m >= t.threshold).map((t) => t.stem);
-}
-
 const FADE_IN_MS = 600;
-const FADE_OUT_MS = 1500;
+const FADE_OUT_MS = 800;
 const MASTER_VOLUME = 0.65;
 
 export class LayeredMixer {
@@ -99,7 +57,6 @@ export class LayeredMixer {
   private stemGains: Map<Stem, GainNode> = new Map();
   private stemSources: Map<Stem, AudioBufferSourceNode> = new Map();
   private buffers: Map<Stem, AudioBuffer> = new Map();
-  private active: Set<Stem> = new Set();
   private playing = false;
   private loadPromise: Promise<void> | null = null;
   // Reentrancy guard for start(). Multiple React effects can race to call
@@ -168,7 +125,8 @@ export class LayeredMixer {
   }
 
   /**
-   * Start playback with the given initial stem set. Creates the AudioContext
+   * Start playback. All stems play together in phase — there is no per-stem
+   * mixing or layering; on/off is the only control. Creates the AudioContext
    * on first call (must be invoked from a user-gesture handler to satisfy
    * browser autoplay policy).
    *
@@ -177,17 +135,17 @@ export class LayeredMixer {
    * BufferSourceNodes (which would orphan the first set on the context and
    * the user would hear each stem twice at different positions).
    */
-  async start(initialStems: readonly Stem[]): Promise<void> {
+  async start(): Promise<void> {
     if (this.startInFlight) {
       await this.startInFlight;
-      this.setActive(initialStems);
+      this.fadeAllIn();
       return;
     }
     if (this.playing) {
-      this.setActive(initialStems);
+      this.fadeAllIn();
       return;
     }
-    this.startInFlight = this.beginPlayback(initialStems);
+    this.startInFlight = this.beginPlayback();
     try {
       await this.startInFlight;
     } finally {
@@ -195,7 +153,7 @@ export class LayeredMixer {
     }
   }
 
-  private async beginPlayback(initialStems: readonly Stem[]): Promise<void> {
+  private async beginPlayback(): Promise<void> {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
@@ -208,9 +166,7 @@ export class LayeredMixer {
     await this.load();
 
     // Defensive cleanup — if any tracked sources are hanging around from a
-    // prior failed attempt, kill them before creating fresh ones. Untracked
-    // orphans (from a pre-fix race) will already have been collected when
-    // the AudioContext was torn down via stop()/destroy().
+    // prior failed attempt, kill them before creating fresh ones.
     this.stemSources.forEach((src) => {
       try {
         src.stop();
@@ -238,47 +194,63 @@ export class LayeredMixer {
       this.stemSources.set(stem, src);
     });
     this.playing = true;
-    this.setActive(initialStems);
-  }
-
-  /** Silence + tear down all stem sources. AudioContext is reused on next start. */
-  stop(): void {
-    if (!this.playing) return;
-    this.stemSources.forEach((src) => {
-      try {
-        src.stop();
-      } catch {
-        // already stopped
-      }
-    });
-    this.stemSources.clear();
-    this.playing = false;
-    this.active.clear();
+    this.fadeAllIn();
   }
 
   /**
-   * Crossfade to the given stem set. Stems entering ramp up over FADE_IN_MS;
-   * stems leaving ramp down over FADE_OUT_MS (longer so combo break feels
-   * like a slow exhale, not a slap).
+   * Fade every stem out and tear down the sources. AudioContext is reused
+   * on the next start(). Asynchronous teardown of source nodes happens after
+   * the fade-out completes so the user doesn't hear a click.
    */
-  setActive(stems: readonly Stem[]): void {
+  stop(): void {
+    if (!this.playing) return;
+    this.fadeAllOut();
     const ctx = this.ctx;
-    if (!ctx || !this.playing) return;
-    const newSet = new Set(stems);
-    const now = ctx.currentTime;
+    const fadeMs = FADE_OUT_MS;
+    const toKill = Array.from(this.stemSources.values());
+    this.stemSources.clear();
+    this.playing = false;
+    if (ctx) {
+      setTimeout(() => {
+        toKill.forEach((src) => {
+          try {
+            src.stop();
+          } catch {
+            // already stopped
+          }
+        });
+      }, fadeMs + 50);
+    }
+  }
 
+  /** Ramp every stem's gain up to 1 over FADE_IN_MS. */
+  private fadeAllIn(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const now = ctx.currentTime;
     STEMS.forEach((stem) => {
       const gain = this.stemGains.get(stem);
       if (!gain) return;
-      const shouldBeActive = newSet.has(stem);
-      const target = shouldBeActive ? 1 : 0;
-      const rampMs = shouldBeActive ? FADE_IN_MS : FADE_OUT_MS;
       const current = gain.gain.value;
       gain.gain.cancelScheduledValues(now);
       gain.gain.setValueAtTime(current, now);
-      gain.gain.linearRampToValueAtTime(target, now + rampMs / 1000);
+      gain.gain.linearRampToValueAtTime(1, now + FADE_IN_MS / 1000);
     });
-    this.active = newSet;
+  }
+
+  /** Ramp every stem's gain down to 0 over FADE_OUT_MS. */
+  private fadeAllOut(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    STEMS.forEach((stem) => {
+      const gain = this.stemGains.get(stem);
+      if (!gain) return;
+      const current = gain.gain.value;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(current, now);
+      gain.gain.linearRampToValueAtTime(0, now + FADE_OUT_MS / 1000);
+    });
   }
 
   isPlaying(): boolean {
