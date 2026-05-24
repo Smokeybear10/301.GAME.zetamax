@@ -23,7 +23,7 @@ export async function SiteHead({
     : null;
 
   return (
-    <header className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
+    <header className="sticky top-0 z-40 grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
       <TransitionLink
         href="/"
         className="font-sans text-[22px] leading-none tracking-[-0.04em] text-white"

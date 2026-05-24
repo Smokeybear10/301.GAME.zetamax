@@ -33,27 +33,26 @@ const STEM_URLS: Record<Stem, string> = {
   vocals: "/audio/stems/vocals.mp3",
 };
 
-/** Stems active on the lobby / non-drill routes. */
-export const LOBBY_STEMS: readonly Stem[] = [
-  "synth",
-  "guitar",
-  "backing-vocals",
-] as const;
+/** Stems active on the lobby / non-drill routes. Pure pad — mostly ambient. */
+export const LOBBY_STEMS: readonly Stem[] = ["synth"] as const;
 
 /**
  * Streak-driven tier ladder for drill screens. Each entry adds its stem to
- * the active set once the player's streak crosses the threshold. The
- * thresholds (3 / 8 / 15 / 22 / 32 / 45 originally, lowered to in-a-row
- * semantics after) match the visible streak counter — vocals (the peak
- * reward) come in at 15 consecutive correct answers each ≤2s apart.
+ * the active set once the player's streak crosses the threshold. Thresholds
+ * are "consecutive correct answers, each submitted within 2s of the
+ * previous" — matches the visible streak counter.
+ *
+ * Backing vocals enter early (streak 6) so the song gets vocal warmth
+ * without giving away the lead — the full lead vocal remains the peak
+ * reward at streak 15.
  */
 const DRILL_TIERS: ReadonlyArray<{ threshold: number; stem: Stem }> = [
   { threshold: 0, stem: "synth" },
   { threshold: 2, stem: "bass" },
   { threshold: 4, stem: "drums" },
-  { threshold: 6, stem: "percussion" },
-  { threshold: 8, stem: "guitar" },
-  { threshold: 11, stem: "backing-vocals" },
+  { threshold: 6, stem: "backing-vocals" },
+  { threshold: 8, stem: "percussion" },
+  { threshold: 11, stem: "guitar" },
   { threshold: 15, stem: "vocals" },
 ];
 
