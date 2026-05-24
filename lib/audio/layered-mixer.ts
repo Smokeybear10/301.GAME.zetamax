@@ -86,6 +86,11 @@ export class LayeredMixer {
   private active: Set<Stem> = new Set();
   private playing = false;
   private loadPromise: Promise<void> | null = null;
+  // Common loop length across all stems — the minimum buffer duration so
+  // every source restarts on the same instant. Stems from Suno's exporter
+  // are within a few ms of each other; without a shared loop point they
+  // drift out of phase over a few minutes of play.
+  private loopSeconds = 0;
 
   /**
    * Decode all 7 stems into AudioBuffers. Idempotent — repeated calls reuse
@@ -110,6 +115,12 @@ export class LayeredMixer {
         this.stemGains.set(stem, gain);
       });
       await Promise.all(decodes);
+      // Use the shortest stem's duration as the shared loop length. Every
+      // source loops on this boundary, so they never drift apart no matter
+      // how long playback runs.
+      this.loopSeconds = Math.min(
+        ...Array.from(this.buffers.values()).map((b) => b.duration),
+      );
     })();
     return this.loadPromise;
   }
@@ -136,6 +147,8 @@ export class LayeredMixer {
     await this.load();
 
     // Start every stem looped at the same instant so they stay phase-locked.
+    // loopEnd is set to the shortest stem's duration so all sources wrap
+    // simultaneously and never drift, even after minutes of playback.
     const startAt = this.ctx.currentTime;
     STEMS.forEach((stem) => {
       const buf = this.buffers.get(stem);
@@ -144,6 +157,8 @@ export class LayeredMixer {
       const src = this.ctx!.createBufferSource();
       src.buffer = buf;
       src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = this.loopSeconds || buf.duration;
       src.connect(gain);
       src.start(startAt);
       this.stemSources.set(stem, src);
