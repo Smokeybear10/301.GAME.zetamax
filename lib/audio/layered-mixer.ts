@@ -24,13 +24,13 @@ export const STEMS = [
 export type Stem = (typeof STEMS)[number];
 
 const STEM_URLS: Record<Stem, string> = {
-  synth: "/audio/stems/synth.mp3",
-  bass: "/audio/stems/bass.mp3",
-  drums: "/audio/stems/drums.mp3",
-  percussion: "/audio/stems/percussion.mp3",
-  guitar: "/audio/stems/guitar.mp3",
-  "backing-vocals": "/audio/stems/backing-vocals.mp3",
-  vocals: "/audio/stems/vocals.mp3",
+  synth: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/synth.mp3",
+  bass: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/bass.mp3",
+  drums: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/drums.mp3",
+  percussion: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/percussion.mp3",
+  guitar: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/guitar.mp3",
+  "backing-vocals": "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/backing-vocals.mp3",
+  vocals: "https://cdn.jsdelivr.net/gh/Smokeybear10/803.DATA.music@main/zetamax/audio/stems/vocals.mp3",
 };
 
 /** Stems active on the lobby / non-drill routes. Pure pad — mostly ambient. */
