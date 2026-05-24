@@ -47,10 +47,10 @@ export function preloadStems(): void {
   });
 }
 
-/** Stems active on the lobby / non-drill routes. Pad + guitar + backing — full
- * enough to be obviously playing, sparse enough that the drill ratchet still
- * earns its drama once bass / drums / vocals enter. */
-export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar", "backing-vocals"] as const;
+/** Stems active on the lobby / non-drill routes. Pad + guitar — audible
+ * presence without any vocals, so backing-vocals AND lead vocals stay
+ * exclusive to the drill ratchet (entering at streak/score 6 and 15). */
+export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar"] as const;
 
 /**
  * Drill tier ladder. Each entry adds its stem to the active set once the
