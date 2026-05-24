@@ -156,6 +156,16 @@ export function ThemeMusic() {
   }, []);
 
   const toggle = () => {
+    // CRITICAL: create + resume the AudioContext SYNCHRONOUSLY here, in the
+    // user-gesture context. Doing it later (e.g. inside the on/off useEffect
+    // chain) means the gesture has already expired by the time
+    // `new AudioContext()` runs, and Chrome/Safari leave the context
+    // suspended forever — toggle shows "on" but no audio ever plays.
+    if (!mixerRef.current) {
+      mixerRef.current = new LayeredMixer();
+    }
+    mixerRef.current.ensureUserGestureContext();
+
     setOn((prev) => {
       const next = !prev;
       try {
