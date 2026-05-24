@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   clearHistory,
+  ensurePracticeBackfilled,
   getHistory,
   type StoredRun,
 } from "@/lib/use-local-history";
@@ -15,6 +16,7 @@ import {
   summarizeMulFacts,
   type ModeFilter,
 } from "@/lib/practice-stats";
+import { fetchPracticeHistory, isPracticeMode } from "@/lib/practice-sync";
 import { ZpButton } from "@/components/ui/zp-button";
 import { MulFactGrid } from "./mul-fact-grid";
 import { OpBars } from "./op-bars";
@@ -55,7 +57,13 @@ export function StatsSection() {
   // Defer localStorage reads to a useEffect — same SSR-safe pattern as
   // usePracticeConfig. Empty rows + "loading" phase shows during hydration;
   // the empty state proper only fires once we've confirmed nothing's stored.
+  //
+  // Two-phase load: (1) paint local rows immediately so the page is never
+  // empty, (2) for signed-in users, run the backfill + server fetch in the
+  // background and replace local-practice rows with the server's version
+  // (server is canonical for practice data once signed in).
   useEffect(() => {
+    let cancelled = false;
     setRows(getHistory());
     try {
       const stored = window.localStorage.getItem(FILTER_KEY);
@@ -64,6 +72,35 @@ export function StatsSection() {
       // ignore
     }
     setPhase("ready");
+
+    (async () => {
+      const { rows: postBackfill } = await ensurePracticeBackfilled();
+      if (cancelled) return;
+      const serverRows = await fetchPracticeHistory();
+      if (cancelled || !serverRows) return;
+
+      // Merge: server practice rows replace local practice rows by runId.
+      // Keep local ranked/daily mirrors as-is (those live in the `runs`
+      // table, not practice_runs). Keep any local practice rows the server
+      // hasn't seen yet (failed write-through; next saveRun will retry it
+      // implicitly via syncPracticeRun).
+      const serverIds = new Set(
+        serverRows
+          .map((r) => r.runId)
+          .filter((id): id is string => typeof id === "string"),
+      );
+      const localKept = postBackfill.filter((r) => {
+        if (isPracticeMode(r.mode) && r.runId && serverIds.has(r.runId)) {
+          return false;
+        }
+        return true;
+      });
+      setRows([...localKept, ...serverRows]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const pickFilter = useCallback((f: ModeFilter) => {
