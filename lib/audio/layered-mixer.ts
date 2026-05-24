@@ -91,7 +91,7 @@ export function activeStemsForPlay(
 
 const FADE_IN_MS = 600;
 const FADE_OUT_MS = 1500;
-const MASTER_VOLUME = 0.4;
+const MASTER_VOLUME = 0.65;
 
 export class LayeredMixer {
   private ctx: AudioContext | null = null;
@@ -114,6 +114,25 @@ export class LayeredMixer {
   // are within a few ms of each other; without a shared loop point they
   // drift out of phase over a few minutes of play.
   private loopSeconds = 0;
+
+  /**
+   * Create the AudioContext if it doesn't exist and call resume() on it.
+   * MUST be invoked from a synchronous user-gesture handler (e.g. an
+   * onClick) before any awaited work — otherwise Chrome/Safari may treat
+   * the context as autoplay-blocked and never produce audio even after
+   * resume() returns. Safe to call repeatedly; idempotent.
+   */
+  ensureUserGestureContext(): void {
+    if (!this.ctx) {
+      this.ctx = new AudioContext();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = MASTER_VOLUME;
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === "suspended") {
+      void this.ctx.resume();
+    }
+  }
 
   /**
    * Decode all 7 stems into AudioBuffers. Idempotent — repeated calls reuse
