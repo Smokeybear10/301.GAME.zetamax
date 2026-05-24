@@ -78,6 +78,11 @@ export class LayeredMixer {
    * onClick) before any awaited work — otherwise Chrome/Safari may treat
    * the context as autoplay-blocked and never produce audio even after
    * resume() returns. Safe to call repeatedly; idempotent.
+   *
+   * Also wires up a statechange handler that auto-resumes the context any
+   * time it falls back to "suspended" — happens during SPA route
+   * transitions, tab-focus changes, and some browser memory-pressure
+   * events. Without this, music drops out mid-session.
    */
   ensureUserGestureContext(): void {
     if (!this.ctx) {
@@ -85,6 +90,14 @@ export class LayeredMixer {
       this.master = this.ctx.createGain();
       this.master.gain.value = MASTER_VOLUME;
       this.master.connect(this.ctx.destination);
+      this.ctx.addEventListener("statechange", () => {
+        if (this.ctx?.state === "suspended" && this.playing) {
+          // Best-effort resume. May fail without a user gesture, but on
+          // navigation/visibility transitions it usually succeeds since
+          // the original gesture grant is still credited to the tab.
+          void this.ctx.resume().catch(() => {});
+        }
+      });
     }
     if (this.ctx.state === "suspended") {
       void this.ctx.resume();
