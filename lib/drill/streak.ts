@@ -5,7 +5,7 @@ import type { AnswerEvent } from "./types";
  * resets. Matches the audio mixer's streak window so the visible counter
  * and the layered build stay in lockstep.
  */
-export const STREAK_WINDOW_MS = 2000;
+export const STREAK_WINDOW_MS = 3000;
 
 /**
  * Current consecutive-correct streak under the "in a row, each within
