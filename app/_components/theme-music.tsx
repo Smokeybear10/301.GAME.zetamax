@@ -10,8 +10,6 @@ import {
   type Stem,
 } from "@/lib/audio/layered-mixer";
 
-const STORAGE_KEY = "zetamax:music-on";
-
 const DRILL_ROUTE_RE = /^\/(practice\/(classic|learn)|competitive\/(ranked|daily|race))/;
 
 function isDrillRoute(pathname: string): boolean {
@@ -47,7 +45,12 @@ type StreakDetail = { streak: number; score: number; active: boolean };
  * Route changes are handled by crossfade (mixer.setActive) only — never
  * a restart. Sources keep playing in phase, gains ramp.
  *
- * Default off — browsers block autoplay without a user gesture.
+ * Always starts off on every page load. The toggle persists within a
+ * session (state lives in this component, which sits in the root layout
+ * and never unmounts during navigation), but a refresh or new tab always
+ * begins silent. No localStorage persistence — browsers block autoplay
+ * without a user gesture anyway, so auto-restoring "on" would just leave
+ * a stuck-suspended AudioContext and confuse the user.
  */
 export function ThemeMusic() {
   const pathname = usePathname();
@@ -64,14 +67,10 @@ export function ThemeMusic() {
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
 
-  // Hydrate persisted on/off from localStorage.
+  // Mark hydrated on mount so the on/off effect below doesn't fire on the
+  // SSR pass. Always starts with on=false — the user must click the toggle
+  // to enable music. See the component docblock for why we don't persist.
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored === "1") setOn(true);
-    } catch {
-      // ignore
-    }
     setHydrated(true);
   }, []);
 
@@ -187,15 +186,7 @@ export function ThemeMusic() {
     }
     mixerRef.current.ensureUserGestureContext();
 
-    setOn((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // ignore
-      }
-      return next;
-    });
+    setOn((prev) => !prev);
   };
 
   if (!hydrated) return null;
