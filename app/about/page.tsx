@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SiteHead } from "@/app/_components/site-head";
 import { StatusBar } from "@/app/_components/status-bar";
 import { KeyboardShortcuts } from "@/app/_components/keyboard-shortcuts";
@@ -20,20 +19,22 @@ const toc = [
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#0c0c0c] text-white antialiased">
-      <div className="max-w-[1180px] mx-auto p-5">
+      {/* Single wrapper so SiteHead's `sticky top-0` containing block spans
+          the full page height — otherwise sticky unsticks when the small
+          wrapper scrolls past, leaving the nav stranded mid-doc. */}
+      <div className="max-w-[1180px] mx-auto px-5 pt-5">
         <SiteHead current="about" />
-      </div>
 
-      <div className="max-w-[1160px] mx-auto px-6 sm:px-10 lg:px-16 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
+        <div className="mx-auto px-1 sm:px-5 lg:px-11 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
 
-        <TocRail items={toc} />
+          <TocRail items={toc} />
 
-        <article>
-          {/* Doc head */}
-          <header className="mb-12">
-            <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3.5">
-              About — Zetamax
-            </p>
+          <article>
+            {/* Doc head */}
+            <header className="mb-12">
+              <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3.5">
+                About — Zetamax · v1.2 · updated 2026-05-25
+              </p>
             <h1 className="font-extralight text-3xl sm:text-4xl md:text-5xl tracking-[-0.025em] leading-[1.05] max-w-[22ch] mb-[18px]">
               Mental-math drill, kept lean.
             </h1>
@@ -169,7 +170,16 @@ export default function AboutPage() {
 
           <Section id="credit" title="Credit">
             <p>
-              Inspired by{" "}
+              Built by{" "}
+              <a
+                href="https://thomasou.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/85 underline underline-offset-4 decoration-white/20 hover:decoration-white transition-colors"
+              >
+                Thomas Ou
+              </a>
+              . Inspired by{" "}
               <a
                 href="https://arithmetic.zetamac.com/"
                 target="_blank"
@@ -208,37 +218,12 @@ export default function AboutPage() {
             </ol>
           </section>
 
-          <footer className="mt-14 sm:mt-16 pt-8 border-t border-white/10 flex items-end justify-between gap-8">
-            <Link
-              href="/practice/classic"
-              className="group inline-block py-2"
-              aria-label="Go to practice"
-            >
-              <div className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-1.5">
-                next
-              </div>
-              <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 transition-colors group-hover:border-white">
-                Drill →
-              </div>
-            </Link>
-            <Link
-              href="/competitive/ranked"
-              className="group inline-block py-2 text-right"
-              aria-label="Play ranked"
-            >
-              <div className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-1.5">
-                or
-              </div>
-              <div className="font-extralight text-3xl tracking-[-0.02em] leading-none pb-1.5 border-b border-white/10 transition-colors group-hover:border-white">
-                Play ranked →
-              </div>
-            </Link>
-          </footer>
         </article>
-      </div>
+        </div>
 
-      <div className="max-w-[1180px] mx-auto px-5 pb-5">
-        <StatusBar />
+        <div className="px-1 sm:px-5 lg:px-11 pb-5">
+          <StatusBar />
+        </div>
       </div>
       <KeyboardShortcuts />
     </main>

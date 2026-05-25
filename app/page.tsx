@@ -216,47 +216,23 @@ export default async function Home() {
             href="/practice/classic"
             badge="NO SIGN-IN"
             name="Practice"
-            sub={<>local-only · nothing leaves your device</>}
+            sub="local · device-only"
             cta="drill →"
           />
           <ModeTile
             href="/competitive/daily"
             badge={`${data.dailyResetIn} LEFT`}
             name="Daily"
-            sub={<>today&apos;s puzzle · 30-day mean ranks</>}
+            sub="one shot · 30-day mean"
             cta="play →"
             viewTransitionName="daily-hero"
           />
-          {data.raceTarget ? (
-            <ModeTile
-              href={`/competitive/race/${data.raceTarget.runId}`}
-              badge={`VS ${data.raceTarget.opponentName.toUpperCase()}`}
-              name="Race"
-              sub={<>same problem stream · their pace as ghost</>}
-              cta="race →"
-            />
-          ) : (
-            <ModeTile
-              href="/competitive/leagues"
-              badge={data.leagueCount > 0 ? `${data.leagueCount} ACTIVE` : "NONE YET"}
-              name="Race"
-              sub={
-                !data.user ? (
-                  <>sign in · race a friend&apos;s ghost</>
-                ) : data.leagueCount === 0 ? (
-                  <>join a league · race their top runs</>
-                ) : (
-                  <>no eligible runs in your league yet</>
-                )
-              }
-              cta={!data.user ? "sign in →" : "join a league →"}
-            />
-          )}
+          <LockedTile name="Race" badge="LOCKED" sub="coming in a future version" />
           <ModeTile
             href="/practice/learn"
             badge="AUTO-TARGET"
             name="Learn"
-            sub={<>drills your weakest pattern · local-only</>}
+            sub="drills your weakest pattern"
             cta="drill →"
           />
         </section>
@@ -466,12 +442,49 @@ function ModeTile({
         <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white mt-1.5">
           {name}
         </div>
-        <div className="text-[11.5px] text-white/55 mt-2.5 font-mono">{sub}</div>
+        <div className="text-[11.5px] text-white/55 mt-2.5 font-mono truncate">
+          {sub}
+        </div>
       </div>
       <div className="text-[11px] text-white/42 group-hover:text-white transition-colors mt-2.5 font-mono">
         {cta}
       </div>
     </TransitionLink>
+  );
+}
+
+/**
+ * Non-clickable tile for features that aren't built yet. Dimmed border + no
+ * hover affordances signal "this exists but isn't ready" without removing
+ * the slot from the grid (so the layout stays four wide).
+ */
+function LockedTile({
+  name,
+  badge,
+  sub,
+}: {
+  name: string;
+  badge: string;
+  sub: string;
+}) {
+  return (
+    <div
+      aria-disabled="true"
+      className="bg-[#0a0a0a] border border-white/[0.06] p-[18px] pb-4 flex flex-col justify-between min-h-[130px] cursor-not-allowed"
+    >
+      <div className="flex justify-end text-[10px] tracking-[0.24em] uppercase text-white/30 font-mono">
+        <span className="truncate">{badge}</span>
+      </div>
+      <div>
+        <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white/30 mt-1.5">
+          {name}
+        </div>
+        <div className="text-[11.5px] text-white/30 mt-2.5 font-mono truncate">
+          {sub}
+        </div>
+      </div>
+      <div className="text-[11px] text-white/25 mt-2.5 font-mono">— soon</div>
+    </div>
   );
 }
 
