@@ -9,6 +9,7 @@ import {
   preloadStems,
   type Stem,
 } from "@/lib/audio/layered-mixer";
+import { useMusicSettings } from "@/lib/audio/music-settings";
 
 const DRILL_ROUTE_RE = /^\/(practice\/(classic|learn)|competitive\/(ranked|daily|race))/;
 
@@ -21,7 +22,9 @@ function computeStems(
   isRunning: boolean,
   peakStreak: number,
   score: number,
+  dynamicStems: boolean,
 ): readonly Stem[] {
+  if (!dynamicStems) return LOBBY_STEMS;
   if (isDrillRoute(pathname) && isRunning) {
     return activeStemsForPlay(peakStreak, score);
   }
@@ -54,6 +57,7 @@ type StreakDetail = { streak: number; score: number; active: boolean };
  */
 export function ThemeMusic() {
   const pathname = usePathname();
+  const { volume, dynamicStems } = useMusicSettings();
   const [on, setOn] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const mixerRef = useRef<LayeredMixer | null>(null);
@@ -66,6 +70,8 @@ export function ThemeMusic() {
   const isRunningRef = useRef(false);
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
+  const dynamicStemsRef = useRef(dynamicStems);
+  dynamicStemsRef.current = dynamicStems;
 
   // Mark hydrated on mount so the on/off effect below doesn't fire on the
   // SSR pass. Always starts with on=false — the user must click the toggle
@@ -92,6 +98,7 @@ export function ThemeMusic() {
         isRunningRef.current,
         peakStreakRef.current,
         scoreRef.current,
+        dynamicStemsRef.current,
       );
       mixer.start(initial).catch(() => setOn(false));
     } else {
@@ -116,6 +123,7 @@ export function ThemeMusic() {
         isRunningRef.current,
         peakStreakRef.current,
         scoreRef.current,
+        dynamicStemsRef.current,
       ),
     );
   }, [pathname, on, hydrated]);
@@ -144,12 +152,37 @@ export function ThemeMusic() {
           isRunningRef.current,
           peakStreakRef.current,
           scoreRef.current,
+          dynamicStemsRef.current,
         ),
       );
     };
     window.addEventListener("zetamax:streak", handler);
     return () => window.removeEventListener("zetamax:streak", handler);
   }, []);
+
+  // Push the live volume setting into the mixer whenever it changes.
+  // setMasterVolume tracks the value even before the AudioContext exists,
+  // so adjusting volume before the first ♪-on click still applies.
+  useEffect(() => {
+    mixerRef.current?.setMasterVolume(volume);
+  }, [volume]);
+
+  // Toggling dynamicStems off mid-drill should drop the active mix back to
+  // the lobby stems immediately (and vice versa) — without this the change
+  // wouldn't take effect until the next streak tick or route change.
+  useEffect(() => {
+    const mixer = mixerRef.current;
+    if (!mixer || !mixer.isPlaying()) return;
+    mixer.setActive(
+      computeStems(
+        pathnameRef.current,
+        isRunningRef.current,
+        peakStreakRef.current,
+        scoreRef.current,
+        dynamicStems,
+      ),
+    );
+  }, [dynamicStems]);
 
   // Resume the AudioContext when the tab regains focus — Safari especially
   // suspends on tab-switch and won't auto-recover otherwise.
@@ -183,6 +216,7 @@ export function ThemeMusic() {
     // runs, and Chrome/Safari leave the context suspended forever.
     if (!mixerRef.current) {
       mixerRef.current = new LayeredMixer();
+      mixerRef.current.setMasterVolume(volume);
     }
     mixerRef.current.ensureUserGestureContext();
 
