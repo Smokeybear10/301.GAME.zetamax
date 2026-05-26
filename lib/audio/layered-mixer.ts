@@ -49,7 +49,7 @@ export function preloadStems(): void {
 
 const FADE_IN_MS = 600;
 const FADE_OUT_MS = 800;
-const MASTER_VOLUME = 0.65;
+const DEFAULT_MASTER_VOLUME = 0.65;
 
 /** Stems active on the lobby / non-drill routes — pad + guitar, no vocals. */
 export const LOBBY_STEMS: readonly Stem[] = ["synth", "guitar"] as const;
@@ -92,6 +92,10 @@ export function activeStemsForPlay(
 export class LayeredMixer {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  // Master volume in [0,1]. Tracked outside the GainNode so settings
+  // changes made BEFORE the AudioContext exists (or between stops) are
+  // applied to the next-created master gain.
+  private masterVolume: number = DEFAULT_MASTER_VOLUME;
   private stemGains: Map<Stem, GainNode> = new Map();
   private stemSources: Map<Stem, AudioBufferSourceNode> = new Map();
   private buffers: Map<Stem, AudioBuffer> = new Map();
@@ -126,7 +130,7 @@ export class LayeredMixer {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = MASTER_VOLUME;
+      this.master.gain.value = this.masterVolume;
       this.master.connect(this.ctx.destination);
       this.ctx.addEventListener("statechange", () => {
         if (this.ctx?.state === "suspended" && this.playing) {
@@ -205,6 +209,24 @@ export class LayeredMixer {
   }
 
   /**
+   * Update the master output volume. Persisted across stop()/start()
+   * cycles even before the AudioContext exists — the next-created master
+   * GainNode picks up the stored value. Applied as a short ramp so live
+   * adjustments don't pop.
+   */
+  setMasterVolume(volume: number): void {
+    const v = Math.max(0, Math.min(1, Number.isFinite(volume) ? volume : 0));
+    this.masterVolume = v;
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master) return;
+    const now = ctx.currentTime;
+    master.gain.cancelScheduledValues(now);
+    master.gain.setValueAtTime(master.gain.value, now);
+    master.gain.linearRampToValueAtTime(v, now + 0.05);
+  }
+
+  /**
    * Crossfade to a new active stem set. Stems entering ramp up over
    * FADE_IN_MS; stems leaving ramp down over FADE_OUT_MS. Stems already in
    * the right state stay put (no-op ramp).
@@ -230,7 +252,7 @@ export class LayeredMixer {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.gain.value = MASTER_VOLUME;
+      this.master.gain.value = this.masterVolume;
       this.master.connect(this.ctx.destination);
     }
     if (this.ctx.state === "suspended") {
@@ -238,8 +260,11 @@ export class LayeredMixer {
     }
     await this.load();
 
-    // Defensive cleanup — if any tracked sources are hanging around from a
-    // prior failed attempt, kill them before creating fresh ones.
+    // Stop any tracked sources from a prior failed attempt OR a stop()
+    // whose fade-out is still in flight. Critical for OFF→ON cycles within
+    // FADE_OUT_MS: without this, old sources keep playing on the same gain
+    // nodes as the new ones and the song appears to resume mid-track
+    // instead of restarting from the top.
     this.stemSources.forEach((src) => {
       try {
         src.stop();
@@ -248,6 +273,18 @@ export class LayeredMixer {
       }
     });
     this.stemSources.clear();
+
+    // Snap every gain to 0, cancelling any in-progress fade-out from a
+    // recent stop(). Otherwise setActive below ramps up from whatever
+    // mid-fade value the gain happens to be at, which would leak audio
+    // from the killed sources during the AudioParam catch-up window.
+    const resetAt = this.ctx.currentTime;
+    STEMS.forEach((stem) => {
+      const gain = this.stemGains.get(stem);
+      if (!gain) return;
+      gain.gain.cancelScheduledValues(resetAt);
+      gain.gain.setValueAtTime(0, resetAt);
+    });
 
     // Start every stem looped at the same instant so they stay phase-locked.
     // loopEnd is set to the shortest stem's duration so all sources wrap
@@ -281,7 +318,11 @@ export class LayeredMixer {
     const ctx = this.ctx;
     const fadeMs = FADE_OUT_MS;
     const toKill = Array.from(this.stemSources.values());
-    this.stemSources.clear();
+    // Intentionally do NOT clear stemSources here. Keep the dying sources
+    // tracked through the fade-out window so beginPlayback() can find and
+    // kill them if start() is called inside the FADE_OUT_MS gap; otherwise
+    // they keep playing on the same gain nodes as the freshly-started ones
+    // and the song sounds like it resumed instead of restarting.
     this.playing = false;
     if (ctx) {
       setTimeout(() => {
@@ -291,6 +332,12 @@ export class LayeredMixer {
           } catch {
             // already stopped
           }
+        });
+        // Drop killed sources from stemSources, but only if a start() in
+        // the interim hasn't already replaced them with fresh ones.
+        const killed = new Set(toKill);
+        this.stemSources.forEach((currentSrc, stem) => {
+          if (killed.has(currentSrc)) this.stemSources.delete(stem);
         });
       }, fadeMs + 50);
     }
