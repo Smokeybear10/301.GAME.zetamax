@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { TransitionLink } from "./transition-link";
+import { MusicSettingsMenu } from "./music-settings-menu";
 
 type Current = "home" | "about" | "practice" | "me" | null;
 
@@ -23,7 +24,7 @@ export async function SiteHead({
     : null;
 
   return (
-    <header className="sticky top-0 z-40 grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
+    <header className="sticky top-0 z-40 grid grid-cols-[auto_1fr_auto_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 sm:gap-7 px-[18px] py-3.5 bg-[#111] border border-white/[0.12] mb-4">
       <TransitionLink
         href="/"
         className="font-sans text-[22px] leading-none tracking-[-0.04em] text-white"
@@ -40,6 +41,7 @@ export async function SiteHead({
       <HeadLink href="/practice/classic" active={current === "practice"} className="hidden md:inline-flex">
         practice
       </HeadLink>
+      <MusicSettingsMenu />
       {displayName ? (
         <TransitionLink
           href="/me"
