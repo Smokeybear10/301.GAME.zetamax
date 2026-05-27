@@ -268,18 +268,6 @@ function ProfileCard({
         )}
       </section>
 
-      <section className="flex flex-col sm:flex-row gap-3">
-        <ZpButton asChild variant="primary" className="text-center">
-          <Link href="/competitive/ranked">Drill ranked</Link>
-        </ZpButton>
-        <ZpButton asChild variant="secondary" className="text-center">
-          <Link href="/competitive/daily">Daily</Link>
-        </ZpButton>
-        <ZpButton asChild variant="secondary" className="text-center">
-          <Link href="/competitive/leagues">Your leagues</Link>
-        </ZpButton>
-      </section>
-
       <SignOutLink />
     </div>
   );
