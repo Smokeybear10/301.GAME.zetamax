@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +12,7 @@ type Preview = {
   name: string;
   member_count: number;
   is_member: boolean;
+  is_owner: boolean;
 };
 
 type LeaderboardRow = {
@@ -36,10 +38,14 @@ type Props = {
 };
 
 export function LeagueDetailScreen({ slug }: Props) {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ tag: "loading" });
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // user_id currently being removed (kick or leave). Drives row-level
+  // pending state so other rows remain interactive.
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setPhase({ tag: "loading" });
@@ -108,6 +114,41 @@ export function LeagueDetailScreen({ slug }: Props) {
     }
   };
 
+  const handleRemove = async (userId: string, displayName: string) => {
+    if (phase.tag !== "ready" || removingId) return;
+    const isSelf = userId === phase.viewerId;
+    const message = isSelf
+      ? `Leave "${phase.preview.name}"? You can rejoin with the share link.`
+      : `Remove ${displayName} from "${phase.preview.name}"?`;
+    if (!window.confirm(message)) return;
+
+    setRemovingId(userId);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/leagues/${slug}/members/${encodeURIComponent(userId)}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? `error_${res.status}`);
+        setRemovingId(null);
+        return;
+      }
+      if (isSelf) {
+        // After self-leave the viewer is no longer a member; bounce to the
+        // leagues index where they can rejoin or hop into another league.
+        router.push("/competitive/leagues");
+        return;
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "network_error");
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   const handleCopy = async () => {
     if (typeof window === "undefined") return;
     const url = `${window.location.origin}/competitive/leagues/${slug}`;
@@ -156,7 +197,9 @@ export function LeagueDetailScreen({ slug }: Props) {
             viewerId={phase.viewerId}
             error={error}
             copied={copied}
+            removingId={removingId}
             onCopy={handleCopy}
+            onRemove={handleRemove}
           />
         )}
       </div>
@@ -236,7 +279,9 @@ function ReadyPanel({
   viewerId,
   error,
   copied,
+  removingId,
   onCopy,
+  onRemove,
 }: {
   slug: string;
   preview: Preview;
@@ -244,7 +289,9 @@ function ReadyPanel({
   viewerId: string;
   error: string | null;
   copied: boolean;
+  removingId: string | null;
   onCopy: () => void;
+  onRemove: (userId: string, displayName: string) => void;
 }) {
   const shareUrl =
     typeof window !== "undefined"
@@ -277,15 +324,21 @@ function ReadyPanel({
             <AnimatePresence initial={false}>
               {rows.map((r, i) => {
                 const isYou = r.user_id === viewerId;
+                // Owner sees a kick × on everyone else. Viewers don't get
+                // × on themselves here — the "leave league" button below
+                // is the canonical self-leave affordance.
+                const canKick = preview.is_owner && !isYou;
+                const pending = removingId === r.user_id;
+                const displayName = isYou ? "You" : r.display_name ?? "Player";
                 return (
                   <motion.div
                     key={r.user_id}
                     layout
                     initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: pending ? 0.5 : 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                    className={`flex items-center gap-3 sm:gap-4 px-3 py-3 ${
+                    className={`group flex items-center gap-3 sm:gap-4 px-3 py-3 ${
                       isYou
                         ? "bg-white/[0.06] border-l-2 border-white -ml-[2px]"
                         : "border-l-2 border-transparent -ml-[2px]"
@@ -299,7 +352,7 @@ function ReadyPanel({
                         isYou ? "text-white" : "text-white/85"
                       }`}
                     >
-                      {isYou ? "You" : r.display_name ?? "Player"}
+                      {displayName}
                       {r.is_provisional && (
                         <span
                           title="Provisional — first 30 rated rounds"
@@ -327,6 +380,17 @@ function ReadyPanel({
                     >
                       {r.rating}
                     </span>
+                    {canKick && (
+                      <button
+                        type="button"
+                        onClick={() => onRemove(r.user_id, r.display_name ?? "Player")}
+                        disabled={pending}
+                        aria-label={`Remove ${r.display_name ?? "this player"} from league`}
+                        className="font-mono text-base leading-none w-6 h-6 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ×
+                      </button>
+                    )}
                   </motion.div>
                 );
               })}
@@ -355,13 +419,30 @@ function ReadyPanel({
         </p>
       </section>
 
-      <section className="flex flex-col sm:flex-row gap-3">
+      <section className="flex flex-col sm:flex-row gap-3 mb-10">
         <ZpButton asChild variant="primary" className="text-center">
           <Link href="/competitive/ranked">Drill ranked</Link>
         </ZpButton>
         <ZpButton asChild variant="secondary" className="text-center">
           <Link href="/competitive/leagues">Your leagues</Link>
         </ZpButton>
+      </section>
+
+      <section className="pt-6 border-t border-white/[0.06]">
+        <button
+          type="button"
+          onClick={() => onRemove(viewerId, "You")}
+          disabled={removingId !== null}
+          className="font-mono text-[10.5px] tracking-[0.24em] uppercase text-white/42 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {removingId === viewerId ? "leaving…" : "leave league"}
+        </button>
+        {preview.is_owner && (
+          <p className="mt-2 font-mono text-[10px] leading-relaxed text-white/30 max-w-md">
+            you created this league. leaving makes it ownerless — the board
+            keeps working but no one can remove members.
+          </p>
+        )}
       </section>
     </>
   );
