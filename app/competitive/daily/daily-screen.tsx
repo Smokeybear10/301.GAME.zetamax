@@ -114,8 +114,11 @@ export function DailyScreen() {
       className="min-h-screen bg-black text-white antialiased"
       style={{ viewTransitionName: "daily-hero" } as React.CSSProperties}
     >
-      <ZpButton asChild variant="chip" className="absolute top-6 left-6">
-        <Link href="/" aria-label="Back to home">← home</Link>
+      <ZpButton asChild variant="floating">
+        <Link href="/" aria-label="Back to home" title="Home">
+          <span aria-hidden="true">←</span>
+          <span className="hidden sm:inline">home</span>
+        </Link>
       </ZpButton>
 
       <div className="max-w-2xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
