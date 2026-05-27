@@ -35,11 +35,11 @@ export async function SiteHead({
       <span className="text-[11px] text-white/55 tracking-[0.04em] hidden sm:block font-mono">
         {subline ?? <DefaultSubline />}
       </span>
+      <HeadLink href="/" active={current === "home"} className="hidden sm:inline-flex">
+        home
+      </HeadLink>
       <HeadLink href="/about" active={current === "about"} className="hidden sm:inline-flex">
         about
-      </HeadLink>
-      <HeadLink href="/practice/classic" active={current === "practice"} className="hidden md:inline-flex">
-        practice
       </HeadLink>
       <MusicSettingsMenu />
       {displayName ? (
@@ -105,8 +105,7 @@ function DefaultSubline() {
   const { h, m } = computeDailyResetET();
   return (
     <>
-      {date} · <span className="text-white">drill window open</span> · daily
-      resets in {h}h {String(m).padStart(2, "0")}m
+      {date} · daily resets in {h}h {String(m).padStart(2, "0")}m
     </>
   );
 }
