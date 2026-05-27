@@ -25,13 +25,13 @@ export default function AboutPage() {
       <div className="max-w-[1180px] mx-auto px-5 pt-5">
         <SiteHead current="about" />
 
-        <div className="mx-auto px-1 sm:px-5 lg:px-11 py-10 lg:py-14 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
+        <div className="mx-auto px-1 sm:px-5 lg:px-11 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-[220px_minmax(0,720px)] gap-10 lg:gap-20 items-start">
 
           <TocRail items={toc} />
 
           <article>
             {/* Doc head */}
-            <header className="mb-12">
+            <header className="mb-20 sm:mb-24">
               <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3.5">
                 About — Zetamax · v1.2 · updated 2026-05-25
               </p>
@@ -50,7 +50,7 @@ export default function AboutPage() {
           {/* Spec strip */}
           <section
             aria-label="Specification"
-            className="my-10 border-y border-white/10"
+            className="my-16 sm:my-20 border-y border-white/10"
           >
             <SpecRow k="Round length" v="2:00" note="120s, ± 2s tolerance" mono />
             <SpecRow k="Sign-in" v="optional" note="Practice = none · Competitive = Google" />
@@ -196,7 +196,7 @@ export default function AboutPage() {
           {/* Footnotes */}
           <section
             id="notes"
-            className="mt-[72px] pt-6 border-t border-white/10"
+            className="mt-[120px] sm:mt-[160px] pt-8 border-t border-white/10"
             aria-label="Notes"
           >
             <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3.5">
@@ -242,16 +242,16 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="pt-14 mt-2 border-t border-white/10">
+    <section id={id} className="pt-20 sm:pt-24 mt-2 border-t border-white/10">
       <h2 className="font-light text-[22px] tracking-[-0.012em] text-white">
         {title}
       </h2>
       {abstract && (
-        <p className="mt-3.5 mb-6 pl-3.5 border-l border-white/10 font-mono text-[12.5px] leading-[1.7] text-white/55 max-w-[56ch]">
+        <p className="mt-4 mb-8 sm:mb-10 pl-3.5 border-l border-white/10 font-mono text-[12.5px] leading-[1.7] text-white/55 max-w-[56ch]">
           {abstract}
         </p>
       )}
-      <div className="text-white/75 font-light leading-[1.66] text-base max-w-[60ch]">
+      <div className="text-white/75 font-light leading-[1.75] text-base max-w-[60ch]">
         {children}
       </div>
     </section>

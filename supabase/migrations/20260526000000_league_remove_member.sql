@@ -7,6 +7,10 @@
 --
 -- Idempotent.
 
+-- The return signature gains an `is_owner` column. Postgres rejects a
+-- CREATE OR REPLACE that changes the return type, so drop first.
+DROP FUNCTION IF EXISTS public.get_league_preview(text);
+
 CREATE OR REPLACE FUNCTION public.get_league_preview(league_slug text)
 RETURNS TABLE(
   league_id uuid,
