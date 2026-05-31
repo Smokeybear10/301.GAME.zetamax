@@ -86,7 +86,7 @@ export function Heatmap() {
       {phase === "ready" && totalAttempts === 0 ? (
         <div className="py-2">
           <p className="font-mono text-[11px] text-white/42 mb-3">
-            data insufficient · no multiplication problems drilled yet
+            your first drill lights this up
           </p>
           <Grid empty />
         </div>
