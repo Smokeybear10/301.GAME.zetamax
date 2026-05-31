@@ -16,13 +16,15 @@ Practice and Competitive share one drill engine; only what happens after the rou
 
 ## Stack
 
-- Next.js 15 App Router + React 19, TypeScript
+- Next.js 16 App Router + React 19, TypeScript
 - Tailwind 3 + shadcn/ui (with a custom `ZpButton` primitive — see `DESIGN.md` for variants)
 - Supabase (Postgres + Auth + RLS), service role for write paths
 - Vitest for unit tests
 - Deployed on Vercel; localhost dev runs on port **2301**
 
 ## Quick start
+
+Requires **Node ≥ 20.9** (Next 16 + Vitest 4). The repo pins it via `.nvmrc` / `.tool-versions`, so `nvm use` or `mise install` picks the right version.
 
 ```bash
 # install
