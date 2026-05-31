@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Suspense } from "react";
 
+export const metadata = { robots: { index: false } };
+
 async function ErrorContent({
   searchParams,
 }: {
