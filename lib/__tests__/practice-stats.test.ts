@@ -587,7 +587,7 @@ type RowOverrides = {
 
 function makeRow(o: RowOverrides = {}): RunRow {
   return {
-    v: 3,
+    v: 4,
     mode: o.mode,
     score: o.score ?? 0,
     problemsAttempted: o.problemsAttempted ?? 0,
