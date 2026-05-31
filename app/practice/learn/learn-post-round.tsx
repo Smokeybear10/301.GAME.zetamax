@@ -108,6 +108,20 @@ export function LearnPostRound({ savedRow, targets, onPlayAgain }: Props) {
             </div>
           )}
 
+          {score > 0 && (
+            <Link
+              href="/auth/login?next=%2Fcompetitive%2Franked"
+              className="group mb-10 text-center zp-fade zp-fade-4"
+            >
+              <span className="font-mono text-[12px] tracking-[0.06em] text-white/70 group-hover:text-white transition-colors">
+                Sign in to rank this against friends →
+              </span>
+              <span className="block font-mono text-[10.5px] tracking-[0.04em] text-white/35 mt-1.5">
+                your local rounds carry over
+              </span>
+            </Link>
+          )}
+
           <Buttons onPlayAgain={onPlayAgain} />
         </>
       )}

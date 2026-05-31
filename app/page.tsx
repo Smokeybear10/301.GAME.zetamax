@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SiteHead } from "./_components/site-head";
 import { StatusBar } from "./_components/status-bar";
 import { KeyboardShortcuts } from "./_components/keyboard-shortcuts";
 import { TransitionLink } from "./_components/transition-link";
+import { EmptyState } from "./_components/empty-state";
 import { YourDay } from "./home/your-day";
 import { Heatmap } from "./home/heatmap";
 import { Focus } from "./home/focus";
@@ -266,7 +266,7 @@ function PlayRanked({
             ? ` · ${lastRanked.ratingDelta >= 0 ? "↑" : "↓"}${Math.abs(lastRanked.ratingDelta)}`
             : ""
         }${lastRanked.newRating != null ? ` · ELO ${lastRanked.newRating}` : ""}`
-      : "data insufficient · no ranked rounds yet";
+      : "play your first ranked round →";
 
   return (
     <TransitionLink
@@ -327,33 +327,22 @@ function LeaguePanel({
       </div>
 
       {!loggedIn ? (
-        <div className="py-2">
-          <p className="font-mono text-[11px] text-white/42 mb-3">
-            data insufficient · sign in to see league leaderboards
-          </p>
-          <Link
-            href="/auth/login"
-            className="inline-flex items-center font-mono text-[10px] tracking-[0.24em] uppercase text-white border border-white/[0.12] hover:border-white/[0.28] px-3 py-1.5 transition-colors"
-          >
-            sign in →
-          </Link>
-        </div>
+        <EmptyState
+          label="climb the elo ladder"
+          directive="sign in to see league leaderboards and rank against friends."
+          cta={{ label: "sign in →", href: "/auth/login" }}
+        />
       ) : !league ? (
-        <div className="py-2">
-          <p className="font-mono text-[11px] text-white/42 mb-3">
-            data insufficient · no leagues yet
-          </p>
-          <Link
-            href="/competitive/leagues"
-            className="inline-flex items-center font-mono text-[10px] tracking-[0.24em] uppercase text-white border border-white/[0.12] hover:border-white/[0.28] px-3 py-1.5 transition-colors"
-          >
-            join a league →
-          </Link>
-        </div>
+        <EmptyState
+          label="join a league"
+          directive="find or start a group and measure your rank against its members."
+          cta={{ label: "browse leagues →", href: "/competitive/leagues" }}
+        />
       ) : rows.length === 0 ? (
-        <p className="font-mono text-[11px] text-white/42 py-3">
-          data insufficient · no qualifying runs in this league yet
-        </p>
+        <EmptyState
+          label="no qualifying runs yet"
+          directive="play a ranked round to land on this league's board."
+        />
       ) : (
         <ol>
           {rows.map((r, i) => {

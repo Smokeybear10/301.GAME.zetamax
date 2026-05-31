@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EmptyState } from "@/app/_components/empty-state";
 import { getHistory } from "@/lib/use-local-history";
 import { lifetimeTotals, type RunRow } from "@/lib/practice-stats";
 
@@ -59,7 +60,11 @@ export function YourDay() {
   if (totalRuns === 0) {
     return (
       <Wrapper>
-        <Insufficient note="data insufficient · no rounds yet" />
+        <EmptyState
+          label="day 1 of your prep"
+          directive="play your first round and your stats fill in here."
+          cta={{ label: "drill →", href: "/practice/classic" }}
+        />
       </Wrapper>
     );
   }

@@ -7,6 +7,7 @@ import { finishRun, type FinishRunResponse } from "@/lib/runs-api";
 import { saveRun } from "@/lib/use-local-history";
 import { TodaysFocus } from "@/app/me/todays-focus";
 import { ZpButton } from "@/components/ui/zp-button";
+import { ShareButton } from "@/app/_components/share-button";
 import { AnimatedCountUp } from "@/app/_components/animated-countup";
 import { LeaderboardPanel } from "./leaderboard-panel";
 
@@ -203,12 +204,15 @@ function SuccessPanel({
 
       <Buttons onPlayAgain={onPlayAgain} />
 
-      <Link
-        href={`/r/${runId}`}
-        className="mt-4 font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-white/65 transition-colors zp-fade zp-fade-5"
-      >
-        replay this round →
-      </Link>
+      <div className="mt-4 flex items-center gap-5 zp-fade zp-fade-5">
+        <Link
+          href={`/r/${runId}`}
+          className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-white/65 transition-colors"
+        >
+          replay this round →
+        </Link>
+        <ShareButton runId={runId} text={`I scored ${response.score} on Zetamax ranked.`} />
+      </div>
     </>
   );
 }
