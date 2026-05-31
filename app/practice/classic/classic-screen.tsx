@@ -14,6 +14,12 @@ import { StreakIndicator } from "@/app/_components/streak-indicator";
 import { MobileKeypad } from "./mobile-keypad";
 import { PostRoundSummary } from "./post-round-summary";
 import { SettingsModal } from "./settings-modal";
+import {
+  feedbackTick,
+  feedbackSkip,
+  feedbackCorrect,
+  feedbackWrong,
+} from "@/lib/feedback/play-feedback";
 
 const DIGIT_KEYS = new Set([
   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -73,6 +79,27 @@ export function ClassicScreen() {
     }
   });
 
+  // Route a key through the engine and fire per-answer feedback imperatively.
+  // We diff the engine's own score/index across the keystroke (no React state)
+  // so feedback never touches the render path: a score bump = correct (bloom +
+  // confirm + haptic); an index advance without a bump = skip/wrong (glow).
+  // Digit keys also tick. Kept in a ref so the stable keydown effect can call
+  // the latest version without re-binding the listener.
+  const handleKeyRef = useRef<(key: string) => void>(() => {});
+  handleKeyRef.current = (key: string) => {
+    const skipKey = config.keybinds.skip;
+    if (DIGIT_KEYS.has(key)) feedbackTick();
+    const before = drill.getState();
+    drill.handleKeystroke(key);
+    const after = drill.getState();
+    if (after.score > before.score) {
+      feedbackCorrect(typedRef.current);
+    } else if (after.currentProblemIndex > before.currentProblemIndex) {
+      if (key === skipKey) feedbackSkip();
+      else feedbackWrong(typedRef.current);
+    }
+  };
+
   // Global keydown listener for the drill. Idle: any non-modifier key starts
   // the drill (matching the "press any key" copy); only recognized keys also
   // count as input. Running: only recognized keys are handled.
@@ -87,7 +114,7 @@ export function ClassicScreen() {
       if (!recognized && !idle) return;
       if (e.key.length === 1 || recognized) e.preventDefault();
       drill.start();
-      if (recognized) drill.handleKeystroke(e.key);
+      if (recognized) handleKeyRef.current(e.key);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -164,7 +191,7 @@ export function ClassicScreen() {
         keybinds={config.keybinds}
         onKey={(key) => {
           drill.start();
-          drill.handleKeystroke(key);
+          handleKeyRef.current(key);
         }}
       />
 
