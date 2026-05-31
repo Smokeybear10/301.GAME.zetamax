@@ -35,8 +35,20 @@ export function PostRoundSummary({ result, onPlayAgain }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [onPlayAgain]);
 
+  // "Beat your previous best?" is judged against the pre-run snapshot.
   const isTodayBest = result.score > 0 && result.score >= stats.todayBest;
   const isLifetimeBest = result.score > 0 && result.score >= stats.lifetimeBest;
+
+  // getStats() reads in this component's mount effect, which React fires
+  // before the parent's persist effect (classic-screen.tsx) — so `stats`
+  // reflects history *before* this run. Fold the just-finished run in so the
+  // counters match the headline instead of lagging a round (the "0/0/0 next
+  // to a new personal best" bug). Abandoned rounds (problemsAttempted === 0)
+  // aren't persisted, so they don't move the counters.
+  const saved = result.problemsAttempted > 0;
+  const todayBest = saved ? Math.max(stats.todayBest, result.score) : stats.todayBest;
+  const lifetimeBest = saved ? Math.max(stats.lifetimeBest, result.score) : stats.lifetimeBest;
+  const totalRuns = saved ? stats.totalRuns + 1 : stats.totalRuns;
 
   return (
     <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-center px-6 z-10 antialiased">
@@ -74,11 +86,11 @@ export function PostRoundSummary({ result, onPlayAgain }: Props) {
 
       {/* Stats row */}
       <div className="flex gap-12 md:gap-16 pt-14 zp-fade zp-fade-4">
-        <Stat label="today" value={`${stats.todayBest}`} highlight={isTodayBest} />
+        <Stat label="today" value={`${todayBest}`} highlight={isTodayBest} />
         <div className="w-px bg-white/10 self-stretch" aria-hidden="true" />
-        <Stat label="lifetime" value={`${stats.lifetimeBest}`} highlight={isLifetimeBest} />
+        <Stat label="lifetime" value={`${lifetimeBest}`} highlight={isLifetimeBest} />
         <div className="w-px bg-white/10 self-stretch" aria-hidden="true" />
-        <Stat label="runs" value={`${stats.totalRuns}`} />
+        <Stat label="runs" value={`${totalRuns}`} />
       </div>
 
       <div className="pt-14">

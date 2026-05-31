@@ -10,6 +10,8 @@ import { Focus } from "./home/focus";
 
 export const metadata = {
   title: "ZETAMAX | timed mental math drill",
+  description:
+    "A timed mental-arithmetic drill. Practice free in your browser, or sign in to play ranked ELO, the daily puzzle, and leagues against friends.",
 };
 
 type LastRanked = {
@@ -442,7 +444,7 @@ function ModeTile({
         <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white mt-1.5">
           {name}
         </div>
-        <div className="text-[11.5px] text-white/55 mt-2.5 font-mono truncate">
+        <div className="text-[11.5px] text-white/55 mt-2.5 font-mono line-clamp-2">
           {sub}
         </div>
       </div>
@@ -479,7 +481,7 @@ function LockedTile({
         <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white/30 mt-1.5">
           {name}
         </div>
-        <div className="text-[11.5px] text-white/30 mt-2.5 font-mono truncate">
+        <div className="text-[11.5px] text-white/30 mt-2.5 font-mono line-clamp-2">
           {sub}
         </div>
       </div>

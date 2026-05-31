@@ -13,6 +13,7 @@ const UUID_REGEX =
  *   - Owner kick: the league creator can remove any other member.
  *   - If the league creator self-leaves, the league becomes ownerless
  *     (created_by → null). Other members keep playing; nobody is admin.
+ *   - When the last member leaves, the empty league is deleted.
  */
 export async function DELETE(
   _req: NextRequest,
@@ -51,6 +52,25 @@ export async function DELETE(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  // Owner self-leave: clear created_by FIRST, before removing the member, so
+  // the "ownerless after the owner leaves" invariant can never be left
+  // half-applied. If this fails we abort before deleting — an admin'd league
+  // is recoverable; a removed owner whose created_by still points at them is a
+  // reclaim-ownership-by-rejoining hole.
+  if (isSelf && isOwner) {
+    const { error: clearError } = await admin
+      .from("leagues")
+      .update({ created_by: null })
+      .eq("id", league.id);
+    if (clearError) {
+      console.error("/api/leagues/members owner-clear failed:", clearError);
+      return NextResponse.json(
+        { error: "could not remove member" },
+        { status: 500 },
+      );
+    }
+  }
+
   const { error: deleteError, count } = await admin
     .from("league_members")
     .delete({ count: "exact" })
@@ -71,17 +91,23 @@ export async function DELETE(
     );
   }
 
-  // If the league owner self-left, the league has no admin anymore.
-  // Clear created_by so they can't reclaim ownership by rejoining.
-  if (isSelf && league.created_by === caller.id) {
-    const { error: clearError } = await admin
+  // Garbage-collect the league once its last member leaves, so empty,
+  // ownerless leagues don't linger as zombies. Best-effort: the member is
+  // already removed, so a cleanup failure must not fail the request.
+  const { count: remaining } = await admin
+    .from("league_members")
+    .select("user_id", { count: "exact", head: true })
+    .eq("league_id", league.id);
+  if (remaining === 0) {
+    const { error: leagueDeleteError } = await admin
       .from("leagues")
-      .update({ created_by: null })
+      .delete()
       .eq("id", league.id);
-    if (clearError) {
-      console.error("/api/leagues/members owner-clear failed:", clearError);
-      // The member was already removed; surface the partial-success state
-      // with a 200 so the UI doesn't double-prompt.
+    if (leagueDeleteError) {
+      console.error(
+        "/api/leagues/members league-cleanup failed:",
+        leagueDeleteError,
+      );
     }
   }
 

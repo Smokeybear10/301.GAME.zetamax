@@ -5,6 +5,8 @@ import { TocRail } from "./toc-rail";
 
 export const metadata = {
   title: "ZETAMAX | About",
+  description:
+    "How Zetamax works: the shared drill engine, competitive ranked/daily/leagues, local-first stats, and the weak-spot Learn diagnostic.",
 };
 
 const toc = [

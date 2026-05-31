@@ -131,7 +131,13 @@ export function rollupTagsFromRound(
   durationMs: number,
 ): TagRollup {
   const seedHash = hashString(seed);
-  const cutoff = durationMs - FATIGUE_TAIL_MS;
+  // Don't let the fatigue tail swallow the whole round. On short custom
+  // durations a flat 10s tail drops every event (a 5s round has cutoff
+  // -5000), so Learn never gets data. Cap the tail at 20% of the round; for
+  // the default 120s round 20% (24s) exceeds 10s, so standard behavior is
+  // unchanged.
+  const tail = Math.min(FATIGUE_TAIL_MS, Math.floor(durationMs * 0.2));
+  const cutoff = durationMs - tail;
   const byTag: Record<string, TagStats> = {};
 
   for (const event of events) {
