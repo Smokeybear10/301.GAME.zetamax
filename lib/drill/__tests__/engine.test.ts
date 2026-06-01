@@ -167,14 +167,36 @@ describe("createDrill — results", () => {
     const clock = mockClock();
     const drill = createDrill({ seed: "test", now: clock.now });
     drill.start();
-    drill.handleKeystroke("Tab"); // wrong
+    drill.handleKeystroke("Tab"); // wrong (skip — not a typing keystroke)
     const problem = drill.getState().currentProblem!;
-    typeAnswer(drill, problem.answer); // correct
+    typeAnswer(drill, problem.answer); // correct, typed clean (no backspaces)
     clock.advance(120_000);
     const result = drill.end();
     expect(result.problemsAttempted).toBe(2);
     expect(result.problemsCorrect).toBe(1);
-    expect(result.accuracy).toBe(0.5);
+    // Accuracy is keystroke cleanliness now, not correct/attempted. The skip
+    // contributes no typing keys and the answer was typed clean, so 100%.
+    expect(result.accuracy).toBe(1);
+    expect(result.score).toBe(1);
+  });
+
+  it("accuracy drops with backspaces (keystroke cleanliness)", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now });
+    drill.start();
+    const problem = drill.getState().currentProblem!;
+    const answer = String(problem.answer);
+    // Fumble: type a wrong leading digit, backspace it, then type clean.
+    const wrong = answer[0] === "9" ? "8" : "9";
+    drill.handleKeystroke(wrong); // 1 digit key
+    drill.handleKeystroke("Backspace"); // 1 backspace
+    typeAnswer(drill, problem.answer); // answer.length digit keys
+    clock.advance(120_000);
+    const result = drill.end();
+    // digits = 1 + answer.length, backspaces = 1.
+    const digits = 1 + answer.length;
+    expect(result.accuracy).toBeCloseTo(digits / (digits + 1));
+    expect(result.accuracy).toBeLessThan(1);
     expect(result.score).toBe(1);
   });
 

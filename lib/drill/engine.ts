@@ -116,11 +116,26 @@ export function createDrill(config: DrillConfig): Drill {
   function buildResult(): RoundResult {
     const events = internal.events;
     const correct = events.filter((e) => e.correct).length;
+    // Accuracy = keystroke cleanliness, not correct/attempted. Since the drill
+    // only advances on a correct answer, correct/attempted sits near 100% and
+    // says nothing. Instead, score the fraction of typing keystrokes that were
+    // forward progress: digits count, backspaces dilute. Clean entry = 100%;
+    // every fumble-and-fix lowers it. (Submit/skip keys aren't typing, so they
+    // don't count either way.)
+    let digitKeys = 0;
+    let backspaces = 0;
+    for (const e of events) {
+      for (const k of e.keystrokes) {
+        if (/^\d$/.test(k.key)) digitKeys++;
+        else if (k.key === keybinds.delete) backspaces++;
+      }
+    }
+    const totalTyping = digitKeys + backspaces;
     return {
       score: internal.score,
       problemsAttempted: events.length,
       problemsCorrect: correct,
-      accuracy: events.length > 0 ? correct / events.length : 0,
+      accuracy: totalTyping > 0 ? digitKeys / totalTyping : events.length > 0 ? 1 : 0,
       meanLatencyMs:
         events.length > 0
           ? events.reduce((sum, e) => sum + e.latencyMs, 0) / events.length
