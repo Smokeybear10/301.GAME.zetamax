@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zetamax — the pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #000000;
+    --panel: #0c0c0c;
+    --panel2: #111114;
+    --locked: #0a0a0a;
+    --line: rgba(255,255,255,0.12);
+    --line-faint: rgba(255,255,255,0.06);
+    --line-mid: rgba(255,255,255,0.18);
+    --t1: #ffffff;
+    --t2: rgba(255,255,255,0.66);
+    --t3: rgba(255,255,255,0.42);
+    --t4: rgba(255,255,255,0.30);
+    --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    --maxw: 1080px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--t1);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+
+  /* ---- labels / type ---- */
+  .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--t3);
+  }
+  .mono { font-family: var(--mono); }
+  .dim { color: var(--t3); }
+  .dim2 { color: var(--t4); }
+
+  /* ---- hero ---- */
+  header {
+    min-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid var(--line-faint);
+    position: relative;
+  }
+  .eyebrow { margin-bottom: 34px; }
+  .wordmark {
+    font-size: clamp(72px, 15vw, 188px);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    margin-bottom: 36px;
+  }
+  .wordmark .light { font-weight: 200; color: var(--t2); }
+  .wordmark .heavy { font-weight: 900; color: var(--t1); }
+  .thesis {
+    font-size: clamp(22px, 3.1vw, 36px);
+    font-weight: 300;
+    letter-spacing: -0.015em;
+    max-width: 860px;
+    color: var(--t1);
+    margin-bottom: 22px;
+  }
+  .thesis b { font-weight: 600; }
+  .thesis .accent { color: var(--t1); border-bottom: 2px solid rgba(255,255,255,0.5); padding-bottom: 1px; }
+  .subthesis {
+    font-size: clamp(15px, 1.9vw, 19px);
+    color: var(--t2);
+    font-weight: 300;
+    max-width: 720px;
+  }
+  .scrollcue {
+    position: absolute; bottom: 34px; left: 28px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.24em;
+    color: var(--t4); text-transform: uppercase;
+  }
+
+  /* ---- section ---- */
+  section { padding: 96px 0; border-bottom: 1px solid var(--line-faint); }
+  .sec-eyebrow { margin-bottom: 20px; }
+  .sec-title {
+    font-size: clamp(30px, 4.4vw, 52px);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin-bottom: 26px;
+  }
+  .sec-title b { font-weight: 700; }
+  .lead {
+    font-size: clamp(16px, 2vw, 20px);
+    color: var(--t2);
+    font-weight: 300;
+    max-width: 760px;
+    margin-bottom: 16px;
+  }
+  .lead b { color: var(--t1); font-weight: 500; }
+
+  /* ---- insight: loops ---- */
+  .loops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+  .loop {
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 26px 24px 24px;
+  }
+  .loop .num { font-family: var(--mono); font-size: 11px; color: var(--t4); margin-bottom: 16px; }
+  .loop h4 { font-weight: 500; font-size: 16px; margin-bottom: 10px; letter-spacing: -0.01em; }
+  .loop p { font-size: 13.5px; color: var(--t2); font-weight: 300; }
+  .loop .broken { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; color: #e5e5e5; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-faint); }
+  .loop .broken::before { content: "✕ "; color: #fff; opacity: 0.9; }
+
+  /* ---- wedge / market gap ---- */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; margin-top: 40px; border: 1px solid var(--line); }
+  .gap-col { padding: 30px 26px; border-right: 1px solid var(--line); }
+  .gap-col:last-child { border-right: none; }
+  .gap-col.you { background: #fff; color: #000; }
+  .gap-col .who { font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 18px; }
+  .gap-col.you .who { color: #000; }
+  .gap-col:not(.you) .who { color: var(--t3); }
+  .gap-col .price { font-size: 30px; font-weight: 300; letter-spacing: -0.02em; margin-bottom: 14px; }
+  .gap-col ul { list-style: none; font-size: 13px; }
+  .gap-col li { padding: 5px 0; font-weight: 300; }
+  .gap-col:not(.you) li { color: var(--t2); }
+  .gap-col .plus::before { content: "+ "; opacity: 0.5; }
+  .gap-col .minus::before { content: "− "; opacity: 0.5; }
+  .wedge-line { margin-top: 36px; font-size: clamp(18px,2.4vw,26px); font-weight: 300; letter-spacing: -0.02em; max-width: 820px; }
+  .wedge-line b { font-weight: 600; }
+
+  /* ---- design directions ---- */
+  .dd { margin-top: 30px; }
+  .dd-item { margin-bottom: 80px; }
+  .dd-item:last-child { margin-bottom: 0; }
+  .dd-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+  .dd-num { font-family: var(--mono); font-size: 13px; color: var(--t4); }
+  .dd-title { font-size: clamp(20px, 2.6vw, 28px); font-weight: 400; letter-spacing: -0.02em; }
+  .dd-prob { font-size: 14.5px; color: var(--t2); font-weight: 300; max-width: 720px; margin-bottom: 24px; }
+  .dd-prob b { color: #fff; font-weight: 500; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: stretch; }
+  .frame {
+    border: 1px solid var(--line);
+    background: #000;
+    position: relative;
+    min-height: 230px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .frame.now { border-color: var(--line-faint); }
+  .frame.next { border-color: var(--line-mid); }
+  .frame-tag {
+    position: absolute; top: 12px; left: 14px; z-index: 3;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  }
+  .frame.now .frame-tag { color: var(--t4); }
+  .frame.next .frame-tag { color: #fff; }
+  .frame.next .frame-tag::after { content: " ✦"; }
+  .screen { flex: 1; padding: 40px 26px 26px; display: flex; flex-direction: column; }
+
+  /* mini panel used inside frames */
+  .mpanel { border: 1px solid var(--line); padding: 18px 18px 16px; background: var(--panel); }
+  .mpanel.locked { background: var(--locked); border-color: var(--line-faint); }
+  .mlabel { font-family: var(--mono); font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--t3); display: flex; justify-content: space-between; margin-bottom: 14px; }
+  .mdead { font-family: var(--mono); font-size: 12px; color: var(--t4); }
+  .mwarm { font-family: var(--mono); font-size: 12px; color: var(--t2); }
+  .mcta { font-family: var(--mono); font-size: 12px; color: #fff; }
+  .mcta::after { content: " →"; }
+
+  /* big number screens */
+  .bignum { font-size: 92px; font-weight: 200; letter-spacing: -0.04em; line-height: 1; }
+  .bignum.up { position: relative; }
+  .rule-draw { height: 2px; background: #fff; width: 64px; margin: 10px 0 6px; }
+  .sub { font-size: 13px; color: var(--t2); font-weight: 300; }
+  .submono { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--t3); margin-top: 4px; }
+  .statrow { display: flex; gap: 26px; margin-top: 22px; }
+  .stat .k { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--t3); margin-bottom: 5px; }
+  .stat .v { font-family: var(--mono); font-size: 17px; color: var(--t2); }
+  .stat .v.hi { color: #fff; }
+  .btns { display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
+  .btn { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; padding: 9px 16px; border: 1px solid var(--line); color: var(--t2); }
+  .btn.primary { background: #fff; color: #000; border-color: #fff; }
+  .btn.ghost { color: var(--t3); }
+  .convert-line {
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line-faint);
+    font-size: 13px; color: var(--t1); font-weight: 300;
+  }
+  .convert-line .carry { color: var(--t3); font-family: var(--mono); font-size: 11px; display: block; margin-top: 4px; }
+
+  .sparkline { display: flex; align-items: flex-end; gap: 3px; height: 30px; margin-top: 14px; }
+  .sparkline span { width: 7px; background: rgba(255,255,255,0.28); }
+  .sparkline span.peak { background: #fff; }
+
+  /* leaderboard rows */
+  .lbrow { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; padding: 7px 0; border-bottom: 1px solid var(--line-faint); }
+  .lbrow .rk { color: var(--t4); width: 22px; }
+  .lbrow .nm { flex: 1; color: var(--t2); }
+  .lbrow .sc { color: #fff; }
+  .lbrow.me .nm, .lbrow.me .sc { color: #fff; }
+  .grid30 { display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; margin-top: 14px; }
+  .grid30 i { aspect-ratio: 1; background: rgba(255,255,255,0.07); }
+  .grid30 i.on { background: rgba(255,255,255,0.55); }
+  .grid30 i.today { background: #fff; }
+
+  /* firm sim presets */
+  .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .preset { border: 1px solid var(--line); padding: 12px 13px; }
+  .preset .pn { font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+  .preset .pd { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--t3); text-transform: uppercase; margin-top: 4px; }
+  .pass { font-family: var(--mono); font-size: 12px; color: #fff; margin-top: 6px; }
+  .pass .check { display:inline-block; margin-left:6px; }
+
+  .ghostmap { position: relative; }
+  .ghostmap .gm { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; opacity: 0.16; }
+  .ghostmap .gm i { aspect-ratio: 1; background: #fff; }
+  .ghostmap .gmlabel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+  .dd-why { margin-top: 18px; font-size: 13.5px; color: var(--t2); font-weight: 300; max-width: 760px; }
+  .dd-why b { color: #fff; font-weight: 500; }
+  .dd-why .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--t4); border: 1px solid var(--line-faint); padding: 2px 7px; margin-right: 8px; }
+
+  /* ---- roadmap ---- */
+  .road { margin-top: 40px; }
+  .tier { margin-bottom: 40px; }
+  .tier-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .tier-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .tier-dot.week { background: #fff; }
+  .tier-dot.month { background: rgba(255,255,255,0.5); }
+  .tier-dot.bet { background: rgba(255,255,255,0.22); border: 1px solid var(--line-mid); }
+  .tier-name { font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; }
+  .tier-meta { font-family: var(--mono); font-size: 11px; color: var(--t4); margin-left: auto; }
+  .ritem { display: grid; grid-template-columns: 28px 1fr 42px; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-faint); align-items: start; }
+  .ritem .ri-n { font-family: var(--mono); font-size: 13px; color: var(--t4); }
+  .ritem .ri-t { font-size: 15.5px; font-weight: 400; letter-spacing: -0.01em; }
+  .ritem .ri-d { font-size: 13px; color: var(--t2); font-weight: 300; margin-top: 4px; }
+  .ritem .ri-d em { color: var(--t3); font-style: normal; }
+  .ritem .ri-e { font-family: var(--mono); font-size: 11px; color: var(--t3); text-align: right; }
+  .ready { display:inline-block; font-family: var(--mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:#000; background:#fff; padding:1px 6px; margin-left:8px; vertical-align: middle; }
+
+  /* ---- anti-scope ---- */
+  .nots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 36px; }
+  .not { border: 1px solid var(--line-faint); padding: 18px 20px; }
+  .not .nt { font-size: 14.5px; font-weight: 500; margin-bottom: 6px; }
+  .not .nt::before { content: "✕ "; color: var(--t3); }
+  .not .nd { font-size: 12.5px; color: var(--t2); font-weight: 300; }
+
+  /* ---- decision ---- */
+  .decision { background: #fff; color: #000; }
+  .decision .sec-eyebrow { color: rgba(0,0,0,0.5); }
+  .decision .sec-title { color: #000; }
+  .decision .lead { color: rgba(0,0,0,0.7); }
+  .decision .lead b { color: #000; }
+  .fork { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 36px; }
+  .opt { border: 1px solid rgba(0,0,0,0.18); padding: 28px 26px; }
+  .opt.rec { border: 2px solid #000; }
+  .opt .ot { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+  .opt .rec-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; background:#000; color:#fff; padding: 2px 8px; margin-left: 8px; vertical-align: middle; }
+  .opt .od { font-size: 14px; color: rgba(0,0,0,0.72); font-weight: 300; }
+
+  /* ---- footer ---- */
+  footer { padding: 60px 0 80px; }
+  .foot { display:flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 16px; }
+  .foot .fm { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--t4); }
+  .next-steps { margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .step { border: 1px solid var(--line); padding: 14px 18px; font-size: 13px; color: var(--t2); font-weight: 300; flex: 1; min-width: 240px; }
+  .step b { color: #fff; font-weight: 500; display:block; margin-bottom: 4px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
+
+  @media (max-width: 760px) {
+    .loops, .gap-grid, .compare, .nots, .fork { grid-template-columns: 1fr; }
+    .gap-col { border-right: none; border-bottom: 1px solid var(--line); }
+    .gap-col:last-child { border-bottom: none; }
+    .ritem { grid-template-columns: 24px 1fr; }
+    .ritem .ri-e { grid-column: 2; text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="label eyebrow">A pitch for what zetamax becomes next</div>
+    <div class="wordmark"><span class="light">zeta</span><span class="heavy">max</span></div>
+    <div class="thesis">
+      Stop being a prettier <b>Zetamac</b> clone. Become the <span class="accent">honest, social math gym for trading-interview prep.</span>
+    </div>
+    <div class="subthesis">
+      You already built the two hardest things in the category. The work isn't more features — it's connecting what's already there.
+    </div>
+  </div>
+  <div class="scrollcue">scroll ↓</div>
+</header>
+
+<!-- THE INSIGHT -->
+<section>
+  <div class="wrap">
+    <div class="label sec-eyebrow">The insight</div>
+    <h2 class="sec-title">You have a <b>loaded gun</b> and no trigger.</h2>
+    <p class="lead">
+      Zetamax already owns what every competitor lacks <b>together</b>: a Monkeytype-grade minimalist drill <b>and</b> server-validated anti-cheat scores, ELO, leagues, and per-tag analytics. The fatal flaw is that none of your loops are closed — the assets exist, but nothing fires them.
+    </p>
+    <div class="loops">
+      <div class="loop">
+        <div class="num">LOOP 01 · SHARE</div>
+        <h4>Viral cards, no button</h4>
+        <p>You render beautiful Open-Graph share cards at <span class="mono">/r/[run_id]</span> and <span class="mono">/leagues/[slug]</span>.</p>
+        <div class="broken">No screen ever offers a share.</div>
+      </div>
+      <div class="loop">
+        <div class="num">LOOP 02 · RETURN</div>
+        <h4>Daily hook, hidden</h4>
+        <p>The daily puzzle is the single strongest reason to come back tomorrow.</p>
+        <div class="broken">Gated behind sign-in — even to look at the board.</div>
+      </div>
+      <div class="loop">
+        <div class="num">LOOP 03 · CONVERT</div>
+        <h4>Peak intent, dead end</h4>
+        <p>A fresh personal best is the one moment someone would sign in or brag.</p>
+        <div class="broken">Results screen offers only "Drill again."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE WEDGE -->
+<section>
+  <div class="wrap">
+    <div class="label sec-eyebrow">The wedge</div>
+    <h2 class="sec-title">Trading &amp; quant <b>interview prep.</b></h2>
+    <p class="lead">
+      Candidates grinding mental-math speed tests for <b>Jane Street, Optiver, SIG, IMC</b> through the Oct–Feb recruiting season. They already screenshot scores into Discord and WSO, prep in 4–8 week cohorts, and complain that Zetamac's integer-only format isn't the real test. Money already flows. There's a hard deadline. They share natively.
+    </p>
+    <div class="gap-grid">
+      <div class="gap-col">
+        <div class="who">Zetamac</div>
+        <div class="price">Free</div>
+        <ul>
+          <li class="plus">Habitual, word-of-mouth</li>
+          <li class="minus">Integer-only, not the real test</li>
+          <li class="minus">No accounts, no analytics</li>
+          <li class="minus">No leaderboard</li>
+        </ul>
+      </div>
+      <div class="gap-col you">
+        <div class="who">Zetamax · the gap</div>
+        <div class="price">Free + social</div>
+        <ul>
+          <li class="plus">Real firm-test simulators</li>
+          <li class="plus">Anti-cheat scores + ELO</li>
+          <li class="plus">Cohort leagues + share cards</li>
+          <li class="plus">Per-tag weak-spot analytics</li>
+        </ul>
+      </div>
+      <div class="gap-col">
+        <div class="who">Tradermath</div>
+        <div class="price">$30–130/mo</div>
+        <ul>
+          <li class="plus">Accurate firm sims</li>
+          <li class="minus">Paywalled</li>
+          <li class="minus">No honest leaderboard</li>
+          <li class="minus">No social loop</li>
+        </ul>
+      </div>
+    </div>
+    <p class="wedge-line">
+      No free tool answers <b>"will I pass Optiver on Tuesday?"</b> — and the paid one that does has no friends on it. You sit exactly in that gap.
+    </p>
+  </div>
+</section>
+
+<!-- DESIGN DIRECTIONS -->
+<section>
+  <div class="wrap">
+    <div class="label sec-eyebrow">Design directions · before → after</div>
+    <h2 class="sec-title">What it should <b>look like.</b></h2>
+    <p class="lead">Five concrete changes, rendered in the real Zetamax aesthetic. The left panel is today; the right is the proposal. Most are assembly of components you've already built.</p>
+
+    <div class="dd">
+
+      <!-- DD1 empty states -->
+      <div class="dd-item">
+        <div class="dd-head"><span class="dd-num">01</span><span class="dd-title">Kill the "data insufficient" walls</span></div>
+        <p class="dd-prob">A new visitor's home is a black page repeating <b>"data insufficient"</b> across five panels. It reads as <b>broken</b>, not premium — and it greets exactly the drive-by traffic share links will bring.</p>
+        <div class="compare">
+          <div class="frame now">
+            <div class="frame-tag">now</div>
+            <div class="screen">
+              <div class="mpanel">
+                <div class="mlabel"><span>your day</span><span>local · all modes</span></div>
+                <div class="mdead">data insufficient · no rounds yet</div>
+              </div>
+              <div class="mpanel" style="margin-top:14px;">
+                <div class="mlabel"><span>×-table · accuracy</span><span>—</span></div>
+                <div class="mdead">data insufficient · no multiplication<br/>problems drilled yet</div>
+              </div>
+            </div>
+          </div>
+          <div class="frame next">
+            <div class="frame-tag">proposed</div>
+            <div class="screen">
+              <div class="mpanel">
+                <div class="mlabel"><span>your day</span><span>day 1 of your prep</span></div>
+                <div style="font-size:34px;font-weight:200;letter-spacing:-0.03em;">—</div>
+                <div class="mcta" style="margin-top:10px;">play your first round</div>
+              </div>
+              <div class="mpanel ghostmap" style="margin-top:14px;">
+                <div class="mlabel"><span>×-table · accuracy</span><span>locked</span></div>
+                <div class="gm">
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                  <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                </div>
+                <div class="mwarm" style="margin-top:12px;">your first drill lights this up</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="dd-why"><span class="tag">effort S</span> One <b>&lt;EmptyState&gt;</b> primitive replaces 7 call sites. <b>Highest perceived-quality lift per hour</b> in the whole product. Keep "data insufficient" as a deliberate motif in exactly one place.</p>
+      </div>
+
+      <!-- DD2 conversion -->
+      <div class="dd-item">
+        <div class="dd-head"><span class="dd-num">02</span><span class="dd-title">Convert at peak dopamine</span></div>
+        <p class="dd-prob">Someone just hit a personal best — the single highest-intent moment in the app — and the screen offers them <b>nothing but "Drill again."</b> No door to competitive, no share of the card you already render.</p>
+        <div class="compare">
+          <div class="frame now">
+            <div class="frame-tag">now</div>
+            <div class="screen" style="align-items:center;text-align:center;">
+              <div class="label" style="margin-bottom:18px;">round complete</div>
+              <div class="bignum">47</div>
+              <div class="sub" style="margin-top:14px;">a new personal best for today.</div>
+              <div class="submono">100% accuracy · 612ms mean latency</div>
+              <div class="btns" style="justify-content:center;">
+                <div class="btn primary">drill again</div>
+                <div class="btn">menu</div>
+              </div>
+            </div>
+          </div>
+          <div class="frame next">
+            <div class="frame-tag">proposed</div>
+            <div class="screen" style="align-items:center;text-align:center;">
+              <div class="label" style="margin-bottom:14px;">round complete</div>
+              <div class="bignum">47</div>
+              <div class="sub" style="margin-top:12px;">a new personal best for today.</div>
+              <div class="submono">100% accuracy · 612ms mean latency</div>
+              <div class="convert-line">
+                Sign in to rank this against friends.
+                <span class="carry">your 6 local rounds carry over →</span>
+              </div>
+              <div class="btns" style="justify-content:center;">
+                <div class="btn primary">continue with google</div>
+                <div class="btn">share result ↗</div>
+              </div>
+              <div class="btns" style="justify-content:center;margin-top:4px;">
+                <div class="btn ghost">drill again</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="dd-why"><span class="tag">effort S</span> The carry-over is honest — <b>ensurePracticeBackfilled()</b> already migrates local history on first sign-in. Asking warm, with the objection pre-killed, beats every cold sign-in wall. Turns every round into a conversion or an acquisition.</p>
+      </div>
+
+      <!-- DD3 cinematic results -->
+      <div class="dd-item">
+        <div class="dd-head"><span class="dd-num">03</span><span class="dd-title">Make the number cinematic</span></div>
+        <p class="dd-prob">The big score is the emotional peak and your most-screenshotted surface. A <b>static fade</b> is "clean." A count-up that lands on a personal best, with one line of context, is <b>premium</b> — and the pieces already exist, unused.</p>
+        <div class="compare">
+          <div class="frame now">
+            <div class="frame-tag">now</div>
+            <div class="screen" style="align-items:center;justify-content:center;text-align:center;">
+              <div class="bignum">47</div>
+              <div class="submono" style="margin-top:16px;">— fades in, then sits there —</div>
+            </div>
+          </div>
+          <div class="frame next">
+            <div class="frame-tag">proposed</div>
+            <div class="screen" style="align-items:center;justify-content:center;text-align:center;">
+              <div class="bignum up">47</div>
+              <div class="rule-draw"></div>
+              <div class="sparkline" aria-hidden="true">
+                <span style="height:40%"></span><span style="height:55%"></span><span style="height:48%"></span>
+                <span style="height:70%"></span><span style="height:62%"></span><span class="peak" style="height:100%"></span>
+              </div>
+              <div class="submono" style="margin-top:12px;">counts 0 → 47 · +12 vs your average · best yet</div>
+            </div>
+          </div>
+        </div>
+        <p class="dd-why"><span class="tag">effort S</span> <b>AnimatedScore</b> (the odometer) and <b>ScoreSparkline</b> are already in your codebase — this is wiring, not invention. The quant audience specifically wants the analytical debrief.</p>
+      </div>
+
+      <!-- DD4 daily ungate -->
+      <div class="dd-item">
+        <div class="dd-head"><span class="dd-num">04</span><span class="dd-title">Un-gate the Daily board</span></div>
+        <p class="dd-prob">A friend clicks your shared daily link and hits a <b>login wall</b> before seeing anything. Every competitive product bootstraps by showing the <b>alive arena</b> first, then converting at the finish line (the Wordle model).</p>
+        <div class="compare">
+          <div class="frame now">
+            <div class="frame-tag">now</div>
+            <div class="screen" style="align-items:center;justify-content:center;text-align:center;">
+              <div class="mpanel locked" style="width:100%;">
+                <div class="mlabel"><span>daily</span><span>locked</span></div>
+                <div class="mdead" style="margin:10px 0;">sign in to play the daily</div>
+                <div class="btn primary" style="display:inline-block;">continue with google</div>
+              </div>
+            </div>
+          </div>
+          <div class="frame next">
+            <div class="frame-tag">proposed</div>
+            <div class="screen">
+              <div class="mlabel"><span>daily · may 30</span><span>30-day mean</span></div>
+              <div class="lbrow"><span class="rk">1</span><span class="nm">quantkid</span><span class="sc">62</span></div>
+              <div class="lbrow"><span class="rk">2</span><span class="nm">optiver_sp27</span><span class="sc">58</span></div>
+              <div class="lbrow me"><span class="rk">—</span><span class="nm">you</span><span class="sc">play →</span></div>
+              <div class="grid30" aria-hidden="true">
+                <i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="today"></i>
+              </div>
+              <div class="mcta" style="margin-top:16px;">play today's puzzle</div>
+            </div>
+          </div>
+        </div>
+        <p class="dd-why"><span class="tag">effort M</span> Render the board read-only for signed-out visitors; gate only the act of <b>submitting</b> a scored run. Also add a one-shot "this is your one attempt" confirm — reload-forfeit is a silent trap today.</p>
+      </div>
+
+      <!-- DD5 firm sims -->
+      <div class="dd-item">
+        <div class="dd-head"><span class="dd-num">05</span><span class="dd-title">Firm-test simulators — the wedge, made visible</span></div>
+        <p class="dd-prob">The durable differentiator and the answer to the audience's literal complaint. A new headline mode beside Classic and Learn: named, accurate, free interview formats no other free tool offers.</p>
+        <div class="compare">
+          <div class="frame next" style="grid-column: 1 / -1;">
+            <div class="frame-tag">new mode</div>
+            <div class="screen">
+              <div class="mlabel"><span>firm sims</span><span>interview-grade</span></div>
+              <div class="presets">
+                <div class="preset"><div class="pn">Optiver 80-in-8</div><div class="pd">80 q · 8 min · −1 per wrong</div></div>
+                <div class="preset"><div class="pn">SIG speed</div><div class="pd">timed · mixed ops</div></div>
+                <div class="preset"><div class="pn">IMC arithmetic</div><div class="pd">timed · decimals</div></div>
+                <div class="preset"><div class="pn">Jane St. mental</div><div class="pd">estimation · fractions</div></div>
+              </div>
+              <div style="margin-top:22px;border-top:1px solid var(--line-faint);padding-top:18px;display:flex;align-items:center;gap:28px;">
+                <div>
+                  <div class="label" style="margin-bottom:8px;">your run</div>
+                  <div style="font-size:54px;font-weight:200;letter-spacing:-0.03em;line-height:1;">72<span style="color:var(--t4);font-size:30px;"> / 80</span></div>
+                </div>
+                <div class="pass">you'd pass Optiver<span class="check">✓</span><br/><span class="dim" style="font-size:10.5px;">~56 pass · ~70 competitive</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="dd-why"><span class="tag">effort M</span> Ship integer presets first to plant the flag; the decimals / fractions / mark-to-market generator is a separable follow-on. This is what makes the share cards and leagues actually <b>spread</b> — "Optiver-ready ✓" is the flex.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section>
+  <div class="wrap">
+    <div class="label sec-eyebrow">The roadmap</div>
+    <h2 class="sec-title">Sequencing, <b>not new features.</b></h2>
+    <p class="lead">Ordered by impact-to-effort, front-loading the cheap polish that disproportionately raises perceived quality. <b>READY</b> = mostly assembling components you already built.</p>
+
+    <div class="road">
+      <div class="tier">
+        <div class="tier-head">
+          <span class="tier-dot week"></span>
+          <span class="tier-name">Ship this week</span>
+          <span class="tier-meta">5 items · all S/M</span>
+        </div>
+        <div class="ritem"><span class="ri-n">1</span><div><div class="ri-t">Kill the "data insufficient" walls</div><div class="ri-d">One EmptyState primitive across 7 panels. <em>Biggest looks-polished win for the least work.</em></div></div><span class="ri-e">S</span></div>
+        <div class="ritem"><span class="ri-n">2</span><div><div class="ri-t">Convert + share on every post-round <span class="ready">ready</span></div><div class="ri-d">Sign-in prompt with carry-over + a Share button on the cards you already render.</div></div><span class="ri-e">S</span></div>
+        <div class="ritem"><span class="ri-n">3</span><div><div class="ri-t">Per-answer feedback (flash + sound + haptic)</div><div class="ri-d">Specced in DESIGN.md, never built. <em>Hitting 60 in a row feels the same as 3 right now.</em></div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">4</span><div><div class="ri-t">Cinematic results — count-up + context <span class="ready">ready</span></div><div class="ri-d">Wire up the unused AnimatedScore odometer + ScoreSparkline.</div></div><span class="ri-e">S</span></div>
+        <div class="ritem"><span class="ri-n">5</span><div><div class="ri-t">Un-gate the Daily board</div><div class="ri-d">Show the arena read-only; gate only submitting. Add the one-shot warning.</div></div><span class="ri-e">M</span></div>
+      </div>
+
+      <div class="tier">
+        <div class="tier-head">
+          <span class="tier-dot month"></span>
+          <span class="tier-name">This month</span>
+          <span class="tier-meta">retention + the wedge</span>
+        </div>
+        <div class="ritem"><span class="ri-n">6</span><div><div class="ri-t">Day-over-day streak + loss-aversion shield</div><div class="ri-d">You have zero return mechanic today. LocalStorage for anon, syncs on sign-in.</div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">7</span><div><div class="ri-t">Firm-test simulator presets</div><div class="ri-d">"Optiver 80-in-8" et al. <em>The durable moat — make this a headline mode.</em></div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">8</span><div><div class="ri-t">Close the league invite loop</div><div class="ri-d">Auto-focus share after creation; pre-filled message; score-flex cards.</div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">9</span><div><div class="ri-t">Esc command palette + full keyboard control</div><div class="ri-d">Collapses the gear modal + hidden key-router into one on-brand surface.</div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">10</span><div><div class="ri-t">Perf: stop the 60fps render storm</div><div class="ri-d">~7,200 wasted re-renders/round just to tick the clock. Dedupe Supabase, drop framer-motion.</div></div><span class="ri-e">M</span></div>
+      </div>
+
+      <div class="tier">
+        <div class="tier-head">
+          <span class="tier-dot bet"></span>
+          <span class="tier-name">Big bet</span>
+          <span class="tier-meta">when the loops are proven</span>
+        </div>
+        <div class="ritem"><span class="ri-n">11</span><div><div class="ri-t">Real offline PWA + raster icons</div><div class="ri-d">Practice is 100% client-side — it can work offline. SW is a no-op today; iOS shows a blank install icon.</div></div><span class="ri-e">M</span></div>
+        <div class="ritem"><span class="ri-n">12</span><div><div class="ri-t">Ship Race mode — or remove the locked tile</div><div class="ri-d">Scaffolding exists (replay plays back keystrokes). <em>Advertising vaporware trains users to ignore your tiles.</em></div></div><span class="ri-e">L</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ANTI-SCOPE -->
+<section>
+  <div class="wrap">
+    <div class="label sec-eyebrow">Don't build (the traps)</div>
+    <h2 class="sec-title">What to <b>cut.</b></h2>
+    <p class="lead">You're a solo builder. Every hour spent here is an hour not closing a loop or planting the wedge.</p>
+    <div class="nots">
+      <div class="not"><div class="nt">A Monkeytype theme catalog</div><div class="nd">Your value is opinionated cohesion. A 90-theme dump dilutes the one thing that separates you from a clone. At most 3–4 curated palettes, much later.</div></div>
+      <div class="not"><div class="nt">The MATHCOUNTS / AMC audience (for now)</div><div class="nd">Lower intent, lower willingness-to-pay, doesn't share. Near-zero-cost reuse of the same infra <em>later</em> — but it splits focus off the trading wedge now.</div></div>
+      <div class="not"><div class="nt">Web push / email re-engagement</div><div class="nd">Real infra cost, only pays off once a daily habit exists worth reminding people about. Build the streak first; the shield gets most of the value.</div></div>
+      <div class="not"><div class="nt">Survival / chained-ops / weekly digests</div><div class="nd">Variety nice-to-haves that compete for solo-builder time with loop-closing. Park them until core retention is proven.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- THE DECISION -->
+<section class="decision">
+  <div class="wrap">
+    <div class="label sec-eyebrow">The one decision — yours, not mine</div>
+    <h2 class="sec-title">Pick the buyer.</h2>
+    <p class="lead">Everything downstream — the firm-sim mode, how leagues are framed, who you tell — depends on this one call. I can't make it; it's about what <b>you</b> want to build.</p>
+    <div class="fork">
+      <div class="opt rec">
+        <div class="ot">The trading-prep gym <span class="rec-tag">recommended</span></div>
+        <div class="od">Own "will I pass the Optiver screen?" Ship firm sims, frame leagues as recruiting cohorts, market into quant Discords Oct–Feb. A buyer with money and a deadline. Narrow, but it spreads.</div>
+      </div>
+      <div class="opt">
+        <div class="ot">A nice general drill</div>
+        <div class="od">Keep it broad and beautiful. Easier, no positioning to defend — but it stays a polished toy that competes with free Zetamac on habit alone, with no reason anyone returns or tells a friend.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER / NEXT STEPS -->
+<footer>
+  <div class="wrap">
+    <div class="label sec-eyebrow">If you say go</div>
+    <h2 class="sec-title" style="font-size:clamp(24px,3.4vw,38px);">Start with <b>1 + 2.</b></h2>
+    <p class="lead" style="margin-bottom:0;">Highest leverage, lowest risk, mostly assembly. Built on a branch and opened as a PR — same flow as the security audit. You review, we feel it out, then decide on 3–5 and the wedge.</p>
+    <div class="next-steps">
+      <div class="step"><b>This week</b>Empty states + post-round conversion &amp; share. One PR.</div>
+      <div class="step"><b>Your call</b>Trading wedge — yes or no? It changes what gets built next.</div>
+      <div class="step"><b>Then</b>Feel + Daily un-gate, streak, firm sims.</div>
+    </div>
+    <div class="foot" style="margin-top:48px;">
+      <span class="fm">zetamax · the pitch</span>
+      <span class="fm">built by thomas ou</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
