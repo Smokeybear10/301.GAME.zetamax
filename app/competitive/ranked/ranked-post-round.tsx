@@ -252,10 +252,10 @@ function EloDelta({ elo }: { elo: NonNullable<FinishRunResponse["elo"]> }) {
         </span>
         {elo.is_provisional && (
           <span
-            title="Provisional — first 30 rated rounds"
+            title="Unrated — first 30 rated rounds"
             className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42"
           >
-            provisional
+            unrated
           </span>
         )}
       </div>

@@ -224,7 +224,7 @@ function ProfileCard({
           <Stat label="matches" value={`${matches}`} />
           <Stat
             label="status"
-            value={provisional ? "provisional" : "rated"}
+            value={provisional ? "unrated" : "rated"}
           />
         </div>
         {rating === null && (
@@ -234,7 +234,7 @@ function ProfileCard({
         )}
         {provisional && rating && (
           <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 mt-4">
-            {30 - matches} provisional{" "}
+            {30 - matches} unrated{" "}
             {30 - matches === 1 ? "round" : "rounds"} remaining
           </p>
         )}
