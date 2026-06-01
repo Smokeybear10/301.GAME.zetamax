@@ -229,7 +229,13 @@ export default async function Home() {
             cta="play →"
             viewTransitionName="daily-hero"
           />
-          <LockedTile name="Race" badge="LOCKED" sub="coming in a future version" />
+          <ModeTile
+            href="/arcade"
+            badge="NEW"
+            name="Arcade"
+            sub="firm sims · race · more"
+            cta="enter →"
+          />
           <ModeTile
             href="/practice/learn"
             badge="AUTO-TARGET"
@@ -441,41 +447,6 @@ function ModeTile({
         {cta}
       </div>
     </TransitionLink>
-  );
-}
-
-/**
- * Non-clickable tile for features that aren't built yet. Dimmed border + no
- * hover affordances signal "this exists but isn't ready" without removing
- * the slot from the grid (so the layout stays four wide).
- */
-function LockedTile({
-  name,
-  badge,
-  sub,
-}: {
-  name: string;
-  badge: string;
-  sub: string;
-}) {
-  return (
-    <div
-      aria-disabled="true"
-      className="bg-[#0a0a0a] border border-white/[0.06] p-[18px] pb-4 flex flex-col justify-between min-h-[130px] cursor-not-allowed"
-    >
-      <div className="flex justify-end text-[10px] tracking-[0.24em] uppercase text-white/30 font-mono">
-        <span className="truncate">{badge}</span>
-      </div>
-      <div>
-        <div className="font-sans font-extralight text-[32px] tracking-[-0.025em] leading-none text-white/30 mt-1.5">
-          {name}
-        </div>
-        <div className="text-[11.5px] text-white/30 mt-2.5 font-mono line-clamp-2">
-          {sub}
-        </div>
-      </div>
-      <div className="text-[11px] text-white/25 mt-2.5 font-mono">— soon</div>
-    </div>
   );
 }
 

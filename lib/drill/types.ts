@@ -91,4 +91,17 @@ export type DrillConfig = {
    * Used by Daily mode to force completion of every problem.
    */
   disableSkip?: boolean;
+  /**
+   * Firm-sim scoring: a wrong submit or a skip subtracts 1 from the score
+   * (floored at 0) instead of being a free pass. Mirrors real timed tests
+   * like Optiver's that penalize wrong answers. Default false.
+   */
+  negativeMarking?: boolean;
+  /**
+   * Hard cap on total attempts (correct + wrong + skipped). The round ends
+   * once this many problems have been committed, OR durationMs, whichever
+   * comes first. Used by fixed-length firm-sim formats ("80 questions in 8
+   * minutes"). Default Infinity (time-only).
+   */
+  maxAttempts?: number;
 };

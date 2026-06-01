@@ -12,6 +12,8 @@ export {
   KEYBIND_DEFAULTS,
   RESERVED_KEYS,
   normalizePracticeConfig,
+  FIRM_SIMS,
+  findFirmSim,
 } from "./config";
 export type {
   GeneratorConfig,
@@ -19,6 +21,7 @@ export type {
   PracticeConfig,
   KeyBinds,
   TargetingConfig,
+  FirmSim,
 } from "./config";
 export type { TagKey, SkillTag, PatternTag } from "./derive-tags";
 export { deriveTags, TAG_VERSION } from "./derive-tags";

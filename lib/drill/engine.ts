@@ -43,6 +43,8 @@ export function createDrill(config: DrillConfig): Drill {
   const terminationMode = config.terminationMode ?? "time";
   const targetCount = config.targetCount ?? Infinity;
   const disableSkip = config.disableSkip ?? false;
+  const negativeMarking = config.negativeMarking ?? false;
+  const maxAttempts = config.maxAttempts ?? Infinity;
 
   const subs = new Set<(state: DrillState) => void>();
 
@@ -104,9 +106,19 @@ export function createDrill(config: DrillConfig): Drill {
       corrections: internal.currentKeystrokes.filter((k) => k.key === "Backspace").length,
     };
     internal.events.push(event);
-    if (correct) internal.score++;
+    if (correct) {
+      internal.score++;
+    } else if (negativeMarking) {
+      // Wrong or skipped costs a point, floored at 0 — Optiver-style marking.
+      internal.score = Math.max(0, internal.score - 1);
+    }
     // Count-mode terminator: end the round as soon as the target is hit.
     if (terminationMode === "count" && internal.score >= targetCount) {
+      endInternal();
+      return;
+    }
+    // Fixed-length terminator: end once the attempt cap is reached.
+    if (internal.events.length >= maxAttempts) {
       endInternal();
       return;
     }

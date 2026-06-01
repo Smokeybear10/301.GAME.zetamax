@@ -70,7 +70,9 @@ export async function updateSession(request: NextRequest) {
     path === "/" ||
     path === "/about" ||
     path.startsWith("/practice") ||
+    path.startsWith("/arcade") ||
     path.startsWith("/design") ||
+    path.startsWith("/pitch") ||
     path.startsWith("/login") ||
     path.startsWith("/auth") ||
     path.startsWith("/api") ||

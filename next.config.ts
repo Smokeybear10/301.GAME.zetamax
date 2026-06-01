@@ -39,10 +39,13 @@ const nextConfig: NextConfig = {
   },
 
   // Static design mockups under public/design/ — let bare /design hit the index.
+  // The pitch deck lives at public/pitch.html — let bare /pitch hit it too.
   async rewrites() {
     return [
       { source: "/design", destination: "/design/index.html" },
       { source: "/design/", destination: "/design/index.html" },
+      { source: "/pitch", destination: "/pitch.html" },
+      { source: "/pitch/", destination: "/pitch.html" },
     ];
   },
 

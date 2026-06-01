@@ -208,6 +208,42 @@ describe("createDrill — results", () => {
     const r2 = drill.end();
     expect(r1).toEqual(r2);
   });
+
+  it("negativeMarking subtracts a point on a wrong/skipped answer, floored at 0", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now, negativeMarking: true });
+    drill.start();
+    // First skip with score 0 stays at 0 (floor).
+    drill.handleKeystroke("Tab");
+    expect(drill.getState().score).toBe(0);
+    // Earn a point, then lose it on a skip.
+    let problem = drill.getState().currentProblem!;
+    typeAnswer(drill, problem.answer);
+    expect(drill.getState().score).toBe(1);
+    drill.handleKeystroke("Tab");
+    expect(drill.getState().score).toBe(0);
+    // Earn another, confirm wrong-submit also subtracts.
+    problem = drill.getState().currentProblem!;
+    typeAnswer(drill, problem.answer);
+    expect(drill.getState().score).toBe(1);
+    problem = drill.getState().currentProblem!;
+    const wrong = problem.answer + 1;
+    typeAnswer(drill, wrong);
+    drill.handleKeystroke("Enter");
+    expect(drill.getState().score).toBe(0);
+  });
+
+  it("maxAttempts ends the round after N committed problems", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now, maxAttempts: 3 });
+    drill.start();
+    for (let i = 0; i < 3; i++) {
+      expect(drill.getState().status).toBe("running");
+      drill.handleKeystroke("Tab"); // skip = an attempt
+    }
+    expect(drill.getState().status).toBe("ended");
+    expect(drill.end().problemsAttempted).toBe(3);
+  });
 });
 
 describe("createDrill — subscriptions", () => {
