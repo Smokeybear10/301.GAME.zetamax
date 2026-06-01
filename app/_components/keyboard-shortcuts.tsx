@@ -17,11 +17,10 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       const target = e.target as HTMLElement | null;
       if (target) {
-        const tag = target.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+        if (target.closest("a, button, input, textarea, select, [role='button'], [role='menuitem'], [role='switch']")) return;
         if (target.isContentEditable) return;
       }
       const key = e.key === "Enter" ? "Enter" : e.key.toLowerCase();

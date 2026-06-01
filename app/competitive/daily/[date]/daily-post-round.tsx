@@ -87,24 +87,26 @@ export function DailyPostRound({
   }, [runId, seed, durationMs, result, startedAtMs]);
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-start sm:justify-center px-6 py-12 sm:py-16 z-10 antialiased overflow-y-auto">
-      <p className="font-mono text-[11px] tracking-[0.32em] text-white/42 uppercase mb-10 zp-fade zp-fade-1">
-        Daily · {date}
-      </p>
-
-      {sub.phase === "submitting" && (
-        <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 zp-fade zp-fade-2">
-          syncing…
+    <div className="fixed inset-0 bg-black text-white flex flex-col items-center px-6 py-12 sm:py-16 z-10 antialiased overflow-y-auto">
+      <div className="flex w-full shrink-0 flex-col items-center sm:my-auto">
+        <p className="font-mono text-[11px] tracking-[0.32em] text-white/42 uppercase mb-10 zp-fade zp-fade-1">
+          Daily · {date}
         </p>
-      )}
 
-      {sub.phase === "abandoned" && <Abandoned />}
+        {sub.phase === "submitting" && (
+          <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 zp-fade zp-fade-2">
+            syncing…
+          </p>
+        )}
 
-      {sub.phase === "error" && <ErrorPanel code={sub.code} />}
+        {sub.phase === "abandoned" && <Abandoned />}
 
-      {sub.phase === "ok" && (
-        <SuccessPanel runId={runId} response={sub.response} result={result} />
-      )}
+        {sub.phase === "error" && <ErrorPanel code={sub.code} />}
+
+        {sub.phase === "ok" && (
+          <SuccessPanel runId={runId} response={sub.response} result={result} />
+        )}
+      </div>
     </div>
   );
 }
@@ -181,9 +183,11 @@ function SuccessPanel({
 
       <div className="w-full max-w-md mb-10 zp-fade zp-fade-4">
         <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3 text-center">
-          Daily mean · last 30 days
+          Daily mean · all time
         </p>
-        <DailyLeaderboardPanel />
+        <div tabIndex={0} role="region" aria-label="Daily rankings" className="max-h-80 overflow-y-auto overscroll-contain focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/30">
+          <DailyLeaderboardPanel />
+        </div>
       </div>
 
       <TodaysFocus />

@@ -79,6 +79,9 @@ export function LeaguesScreen() {
           <h1 className="font-extralight text-3xl sm:text-4xl tracking-[-0.02em] leading-tight">
             Where you and your friends compete.
           </h1>
+          <Link href="/competitive/leaderboards" className="inline-block mt-5 font-mono text-[11px] text-white/55 hover:text-white transition-colors">
+            global leaderboards →
+          </Link>
         </header>
 
         <section className="mb-16">

@@ -74,6 +74,9 @@ export function RankedPostRound({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.repeat || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      const target = e.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("a, button, input, textarea, select, [role='button'], [role='tab'], [tabindex='0']"))) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         onPlayAgain();
@@ -84,33 +87,35 @@ export function RankedPostRound({
   }, [onPlayAgain]);
 
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col items-center justify-start sm:justify-center px-6 py-12 sm:py-16 z-10 antialiased overflow-y-auto">
-      <p className="font-mono text-[11px] tracking-[0.32em] text-white/42 uppercase mb-10 zp-fade zp-fade-1">
-        Round complete
-      </p>
-
-      {sub.phase === "submitting" && (
-        <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 zp-fade zp-fade-2">
-          syncing…
+    <div className="fixed inset-0 bg-black text-white flex flex-col items-center px-6 py-12 sm:py-16 z-10 antialiased overflow-y-auto">
+      <div className="flex w-full shrink-0 flex-col items-center sm:my-auto">
+        <p className="font-mono text-[11px] tracking-[0.32em] text-white/42 uppercase mb-10 zp-fade zp-fade-1">
+          Round complete
         </p>
-      )}
 
-      {sub.phase === "abandoned" && (
-        <AbandonedPanel onPlayAgain={onPlayAgain} />
-      )}
+        {sub.phase === "submitting" && (
+          <p className="font-mono text-[11px] tracking-[0.32em] uppercase text-white/42 zp-fade zp-fade-2">
+            syncing…
+          </p>
+        )}
 
-      {sub.phase === "error" && (
-        <ErrorPanel code={sub.code} onPlayAgain={onPlayAgain} />
-      )}
+        {sub.phase === "abandoned" && (
+          <AbandonedPanel onPlayAgain={onPlayAgain} />
+        )}
 
-      {sub.phase === "ok" && (
-        <SuccessPanel
-          runId={runId}
-          response={sub.response}
-          result={result}
-          onPlayAgain={onPlayAgain}
-        />
-      )}
+        {sub.phase === "error" && (
+          <ErrorPanel code={sub.code} onPlayAgain={onPlayAgain} />
+        )}
+
+        {sub.phase === "ok" && (
+          <SuccessPanel
+            runId={runId}
+            response={sub.response}
+            result={result}
+            onPlayAgain={onPlayAgain}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -194,9 +199,11 @@ function SuccessPanel({
 
       <div className="w-full max-w-md mb-10 zp-fade zp-fade-4">
         <p className="font-mono text-[10px] tracking-[0.32em] uppercase text-white/42 mb-3 text-center">
-          Rating · last 30 days
+          Rankings
         </p>
-        <LeaderboardPanel />
+        <div tabIndex={0} role="region" aria-label="Rankings" className="max-h-80 overflow-y-auto overscroll-contain focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/30">
+          <LeaderboardPanel />
+        </div>
       </div>
 
       <TodaysFocus />

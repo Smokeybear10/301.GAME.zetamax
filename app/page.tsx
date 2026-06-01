@@ -45,6 +45,7 @@ type HomeData = {
   lastRanked: LastRanked | null;
   league: { slug: string; name: string } | null;
   leagueRows: LeaderboardRow[];
+  leagueError: boolean;
   leagueCount: number;
   raceTarget: RaceTarget | null;
   dailyResetIn: string;
@@ -66,6 +67,7 @@ async function loadHomeData(): Promise<HomeData> {
       lastRanked: null,
       league: null,
       leagueRows: [],
+      leagueError: false,
       leagueCount: 0,
       raceTarget: null,
       dailyResetIn,
@@ -104,11 +106,13 @@ async function loadHomeData(): Promise<HomeData> {
     : null;
 
   let leagueRows: LeaderboardRow[] = [];
+  let leagueError = !!leaguesRes.error;
   if (primaryLeague) {
-    const lbRes = await supabase.rpc("get_league_leaderboard", {
+    const lbRes = await supabase.rpc("get_ranked_leaderboard_stats", {
       league_slug: primaryLeague.slug,
     });
-    leagueRows = ((lbRes.data ?? []) as LeaderboardRow[]).slice(0, 5);
+    leagueError = !!lbRes.error;
+    leagueRows = lbRes.error ? [] : ((lbRes.data ?? []) as LeaderboardRow[]).slice(0, 5);
   }
 
   // Pick the top non-self league member as the race target, then resolve
@@ -155,6 +159,7 @@ async function loadHomeData(): Promise<HomeData> {
     lastRanked,
     league: primaryLeague,
     leagueRows,
+    leagueError,
     leagueCount: myLeagues.length,
     raceTarget,
     dailyResetIn,
@@ -206,10 +211,19 @@ export default async function Home() {
             <LeaguePanel
               league={data.league}
               rows={data.leagueRows}
+              error={data.leagueError}
               userId={data.user?.id ?? null}
               loggedIn={!!data.user}
               raceTarget={data.raceTarget}
             />
+            <nav aria-label="Leaderboards" className="flex justify-between gap-3 font-mono text-[11px] text-white/55">
+              <Link href="/competitive/leaderboards" className="hover:text-white transition-colors">
+                global leaderboards →
+              </Link>
+              <Link href="/competitive/leagues" className="hover:text-white transition-colors">
+                your leagues →
+              </Link>
+            </nav>
           </div>
         </section>
 
@@ -225,7 +239,7 @@ export default async function Home() {
             href="/competitive/daily"
             badge={`${data.dailyResetIn} LEFT`}
             name="Daily"
-            sub="one shot · 30-day mean"
+            sub="one shot · all-time mean"
             cta="play →"
             viewTransitionName="daily-hero"
           />
@@ -297,16 +311,18 @@ function PlayRanked({
 function LeaguePanel({
   league,
   rows,
+  error,
   userId,
   loggedIn,
 }: {
   league: { slug: string; name: string } | null;
   rows: LeaderboardRow[];
+  error: boolean;
   userId: string | null;
   loggedIn: boolean;
   raceTarget: RaceTarget | null;
 }) {
-  const clickable = loggedIn && !!league;
+  const clickable = loggedIn && !!league && !error;
   const containerClass = clickable
     ? "group block bg-[#111] border border-white/[0.12] hover:border-white/[0.28] hover:bg-[#16161a] transition-colors p-[18px]"
     : "bg-[#111] border border-white/[0.12] p-[18px]";
@@ -336,6 +352,15 @@ function LeaguePanel({
             className="inline-flex items-center font-mono text-[10px] tracking-[0.24em] uppercase text-white border border-white/[0.12] hover:border-white/[0.28] px-3 py-1.5 transition-colors"
           >
             sign in →
+          </Link>
+        </div>
+      ) : error ? (
+        <div className="py-2" role="status">
+          <p className="font-mono text-[11px] text-white/65 mb-3">
+            Couldn&apos;t load league standings. Try again.
+          </p>
+          <Link href="/competitive/leagues" className="font-mono text-[10px] tracking-[0.18em] uppercase text-white underline underline-offset-4">
+            open your leagues →
           </Link>
         </div>
       ) : !league ? (
@@ -382,7 +407,7 @@ function LeaguePanel({
                 >
                   {isMe ? "You" : r.display_name ?? "Player"}
                 </span>
-                <span className="text-[11px] text-white/42" title="best in last 30 days">
+                <span className="text-[11px] text-white/42" title="all-time best score">
                   {r.best_score}
                 </span>
                 <span

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { ZpButton } from "@/components/ui/zp-button";
+import { RankedLeaderboardTable, type RankedLeaderboardRow } from "../../ranked/ranked-leaderboard-table";
 
 type Preview = {
   league_id: string;
@@ -15,23 +15,14 @@ type Preview = {
   is_owner: boolean;
 };
 
-type LeaderboardRow = {
-  user_id: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  rating: number;
-  peak_rating: number;
-  is_provisional: boolean;
-  best_score: number;
-  best_started_at: string | null;
-  runs_played: number;
-};
+type LeaderboardRow = RankedLeaderboardRow;
 
 type Phase =
   | { tag: "loading" }
+  | { tag: "error" }
   | { tag: "not-found" }
   | { tag: "join"; preview: Preview; signedIn: boolean }
-  | { tag: "ready"; preview: Preview; rows: LeaderboardRow[]; viewerId: string };
+  | { tag: "ready"; preview: Preview; rows: LeaderboardRow[] | null; viewerId: string };
 
 type Props = {
   slug: string;
@@ -57,8 +48,7 @@ export function LeagueDetailScreen({ slug }: Props) {
     ]);
     const viewerId = userRes.user?.id ?? null;
     if (previewRes.error) {
-      setError(previewRes.error.message);
-      setPhase({ tag: "not-found" });
+      setPhase({ tag: "error" });
       return;
     }
     const previewRows = (previewRes.data ?? []) as Preview[];
@@ -75,12 +65,11 @@ export function LeagueDetailScreen({ slug }: Props) {
       setPhase({ tag: "not-found" });
       return;
     }
-    const lbRes = await supabase.rpc("get_league_leaderboard", {
+    const lbRes = await supabase.rpc("get_ranked_leaderboard_stats", {
       league_slug: slug,
     });
     if (lbRes.error) {
-      setError(lbRes.error.message);
-      setPhase({ tag: "ready", preview, rows: [], viewerId });
+      setPhase({ tag: "ready", preview, rows: null, viewerId });
       return;
     }
     setPhase({
@@ -178,6 +167,13 @@ export function LeagueDetailScreen({ slug }: Props) {
           <NotFoundState />
         )}
 
+        {phase.tag === "error" && (
+          <div role="status" className="py-12">
+            <p className="text-white/65 mb-4">Couldn&apos;t load this league. Try again.</p>
+            <ZpButton variant="chip" onClick={load}>Retry</ZpButton>
+          </div>
+        )}
+
         {phase.tag === "join" && (
           <JoinPanel
             slug={slug}
@@ -200,6 +196,7 @@ export function LeagueDetailScreen({ slug }: Props) {
             removingId={removingId}
             onCopy={handleCopy}
             onRemove={handleRemove}
+            onRetry={load}
           />
         )}
       </div>
@@ -282,16 +279,18 @@ function ReadyPanel({
   removingId,
   onCopy,
   onRemove,
+  onRetry,
 }: {
   slug: string;
   preview: Preview;
-  rows: LeaderboardRow[];
+  rows: LeaderboardRow[] | null;
   viewerId: string;
   error: string | null;
   copied: boolean;
   removingId: string | null;
   onCopy: () => void;
   onRemove: (userId: string, displayName: string) => void;
+  onRetry: () => void;
 }) {
   const shareUrl =
     typeof window !== "undefined"
@@ -309,93 +308,38 @@ function ReadyPanel({
         </h1>
         <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-white/42">
           {preview.member_count} {preview.member_count === 1 ? "member" : "members"}{" "}
-          · best over last 30 days
+          · all-time ranked stats
         </p>
       </header>
 
       <section className="mb-12 sm:mb-14">
-        {rows.length === 0 ? (
+        {rows === null ? (
+          <div role="status">
+            <p className="text-white/65 mb-4">Couldn&apos;t load league standings. Try again.</p>
+            <ZpButton variant="chip" onClick={onRetry}>Retry</ZpButton>
+          </div>
+        ) : rows.length === 0 ? (
           <p className="text-white/65 leading-relaxed">
-            No qualifying runs in the last 30 days yet. Drill a ranked round to
+            No ranked rounds yet. Drill a ranked round to
             put yourself on the board.
           </p>
         ) : (
-          <div className="border-t border-b border-white/10 divide-y divide-white/10">
-            <AnimatePresence initial={false}>
-              {rows.map((r, i) => {
-                const isYou = r.user_id === viewerId;
-                // Owner sees a kick × on everyone else. Viewers don't get
-                // × on themselves here — the "leave league" button below
-                // is the canonical self-leave affordance.
-                const canKick = preview.is_owner && !isYou;
-                const pending = removingId === r.user_id;
-                const displayName = isYou ? "You" : r.display_name ?? "Player";
-                return (
-                  <motion.div
-                    key={r.user_id}
-                    layout
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: pending ? 0.5 : 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                    className={`group flex items-center gap-3 sm:gap-4 px-3 py-3 ${
-                      isYou
-                        ? "bg-white/[0.06] border-l-2 border-white -ml-[2px]"
-                        : "border-l-2 border-transparent -ml-[2px]"
-                    }`}
-                  >
-                    <motion.span layout="position" className="font-mono tabular-nums text-white/42 w-7 text-right">
-                      {i + 1}
-                    </motion.span>
-                    <span
-                      className={`flex-1 min-w-0 truncate ${
-                        isYou ? "text-white" : "text-white/85"
-                      }`}
-                    >
-                      {displayName}
-                      {r.is_provisional && (
-                        <span
-                          title="Provisional — first 30 rated rounds"
-                          className="ml-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 align-middle"
-                        >
-                          provisional
-                        </span>
-                      )}
-                    </span>
-                    <span
-                      className="hidden sm:inline font-mono tabular-nums text-white/42 text-[11px] whitespace-nowrap"
-                      title="Best score in last 30 days"
-                    >
-                      best {r.best_score}
-                    </span>
-                    <span
-                      className="hidden sm:inline font-mono tabular-nums text-white/42 text-[11px] whitespace-nowrap"
-                      title="Runs played in last 30 days"
-                    >
-                      {r.runs_played} {r.runs_played === 1 ? "run" : "runs"}
-                    </span>
-                    <span
-                      className="font-mono tabular-nums text-white text-lg w-14 text-right"
-                      title="ELO rating"
-                    >
-                      {r.rating}
-                    </span>
-                    {canKick && (
-                      <button
-                        type="button"
-                        onClick={() => onRemove(r.user_id, r.display_name ?? "Player")}
-                        disabled={pending}
-                        aria-label={`Remove ${r.display_name ?? "this player"} from league`}
-                        className="font-mono text-base leading-none w-6 h-6 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+          <RankedLeaderboardTable
+            rows={rows}
+            viewerId={viewerId}
+            pendingUserId={removingId}
+            renderAction={preview.is_owner ? (row) => row.user_id === viewerId ? null : (
+              <button
+                type="button"
+                onClick={() => onRemove(row.user_id, row.display_name ?? "Player")}
+                disabled={removingId !== null}
+                aria-label={`Remove ${row.display_name ?? "this player"} from league`}
+                className="font-mono text-base leading-none w-6 h-6 flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.08] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                ×
+              </button>
+            ) : undefined}
+          />
         )}
         {error && (
           <p className="font-mono text-[11px] text-white/65 mt-3">{error}</p>

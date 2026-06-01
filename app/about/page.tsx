@@ -82,9 +82,9 @@ export default function AboutPage() {
                 score, ELO updates per round with margin-aware math (a 47-30
                 win is bigger than 47-46).
               </Flavour>
-              <Flavour name="Daily" badge="30d mean">
+              <Flavour name="Daily" badge="all-time mean">
                 one shared puzzle per day, one shot, leaderboard ranks the
-                30-day mean. Reload mid-round forfeits that day; you can
+                all-time mean. Reload mid-round forfeits that day; you can
                 backfill past days you missed.
               </Flavour>
               <Flavour name="Leagues" badge="share url" last>
