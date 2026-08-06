@@ -13,6 +13,8 @@ export type DrillModeOpts = {
   terminationMode?: "time" | "count";
   targetCount?: number;
   disableSkip?: boolean;
+  negativeMarking?: boolean;
+  maxAttempts?: number;
 };
 
 /**
@@ -36,6 +38,8 @@ export function useDrill(
   const terminationMode = modeOpts?.terminationMode;
   const targetCount = modeOpts?.targetCount;
   const disableSkip = modeOpts?.disableSkip;
+  const negativeMarking = modeOpts?.negativeMarking;
+  const maxAttempts = modeOpts?.maxAttempts;
 
   const drill = useMemo(
     () =>
@@ -47,8 +51,10 @@ export function useDrill(
         terminationMode,
         targetCount,
         disableSkip,
+        negativeMarking,
+        maxAttempts,
       }),
-    [seed, durationMs, generatorConfig, keybinds, terminationMode, targetCount, disableSkip],
+    [seed, durationMs, generatorConfig, keybinds, terminationMode, targetCount, disableSkip, negativeMarking, maxAttempts],
   );
 
   // tick is a force-render counter; we don't use its value

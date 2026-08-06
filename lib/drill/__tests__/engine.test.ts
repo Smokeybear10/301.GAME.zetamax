@@ -167,14 +167,36 @@ describe("createDrill — results", () => {
     const clock = mockClock();
     const drill = createDrill({ seed: "test", now: clock.now });
     drill.start();
-    drill.handleKeystroke("Tab"); // wrong
+    drill.handleKeystroke("Tab"); // wrong (skip — not a typing keystroke)
     const problem = drill.getState().currentProblem!;
-    typeAnswer(drill, problem.answer); // correct
+    typeAnswer(drill, problem.answer); // correct, typed clean (no backspaces)
     clock.advance(120_000);
     const result = drill.end();
     expect(result.problemsAttempted).toBe(2);
     expect(result.problemsCorrect).toBe(1);
-    expect(result.accuracy).toBe(0.5);
+    // Accuracy is keystroke cleanliness now, not correct/attempted. The skip
+    // contributes no typing keys and the answer was typed clean, so 100%.
+    expect(result.accuracy).toBe(1);
+    expect(result.score).toBe(1);
+  });
+
+  it("accuracy drops with backspaces (keystroke cleanliness)", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now });
+    drill.start();
+    const problem = drill.getState().currentProblem!;
+    const answer = String(problem.answer);
+    // Fumble: type a wrong leading digit, backspace it, then type clean.
+    const wrong = answer[0] === "9" ? "8" : "9";
+    drill.handleKeystroke(wrong); // 1 digit key
+    drill.handleKeystroke("Backspace"); // 1 backspace
+    typeAnswer(drill, problem.answer); // answer.length digit keys
+    clock.advance(120_000);
+    const result = drill.end();
+    // digits = 1 + answer.length, backspaces = 1.
+    const digits = 1 + answer.length;
+    expect(result.accuracy).toBeCloseTo(digits / (digits + 1));
+    expect(result.accuracy).toBeLessThan(1);
     expect(result.score).toBe(1);
   });
 
@@ -185,6 +207,42 @@ describe("createDrill — results", () => {
     const r1 = drill.end();
     const r2 = drill.end();
     expect(r1).toEqual(r2);
+  });
+
+  it("negativeMarking subtracts a point on a wrong/skipped answer, floored at 0", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now, negativeMarking: true });
+    drill.start();
+    // First skip with score 0 stays at 0 (floor).
+    drill.handleKeystroke("Tab");
+    expect(drill.getState().score).toBe(0);
+    // Earn a point, then lose it on a skip.
+    let problem = drill.getState().currentProblem!;
+    typeAnswer(drill, problem.answer);
+    expect(drill.getState().score).toBe(1);
+    drill.handleKeystroke("Tab");
+    expect(drill.getState().score).toBe(0);
+    // Earn another, confirm wrong-submit also subtracts.
+    problem = drill.getState().currentProblem!;
+    typeAnswer(drill, problem.answer);
+    expect(drill.getState().score).toBe(1);
+    problem = drill.getState().currentProblem!;
+    const wrong = problem.answer + 1;
+    typeAnswer(drill, wrong);
+    drill.handleKeystroke("Enter");
+    expect(drill.getState().score).toBe(0);
+  });
+
+  it("maxAttempts ends the round after N committed problems", () => {
+    const clock = mockClock();
+    const drill = createDrill({ seed: "test", now: clock.now, maxAttempts: 3 });
+    drill.start();
+    for (let i = 0; i < 3; i++) {
+      expect(drill.getState().status).toBe("running");
+      drill.handleKeystroke("Tab"); // skip = an attempt
+    }
+    expect(drill.getState().status).toBe("ended");
+    expect(drill.end().problemsAttempted).toBe(3);
   });
 });
 

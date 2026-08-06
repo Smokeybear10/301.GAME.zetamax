@@ -355,10 +355,10 @@ function ReadyPanel({
                       {displayName}
                       {r.is_provisional && (
                         <span
-                          title="Provisional — first 30 rated rounds"
+                          title="Unrated — first 30 rated rounds"
                           className="ml-1.5 font-mono text-[10px] tracking-[0.18em] uppercase text-white/42 align-middle"
                         >
-                          provisional
+                          unrated
                         </span>
                       )}
                     </span>
