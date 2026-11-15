@@ -24,6 +24,7 @@
  */
 
 import Link from "next/link";
+import { normalizeKey } from "@/lib/drill/keys";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   KEYBIND_DEFAULTS,
@@ -241,16 +242,17 @@ function ActiveView({
     const { submit, skip, delete: del } = KEYBIND_DEFAULTS;
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = normalizeKey(e);
       const recognized =
-        DIGIT_KEYS.has(e.key) ||
-        e.key === submit ||
-        e.key === skip ||
-        e.key === del;
+        DIGIT_KEYS.has(key) ||
+        key === submit ||
+        key === skip ||
+        key === del;
       const idle = state.status === "idle";
       if (!recognized && !idle) return;
-      if (e.key.length === 1 || recognized) e.preventDefault();
+      if (key.length === 1 || recognized) e.preventDefault();
       drill.start();
-      if (recognized) drill.handleKeystroke(e.key);
+      if (recognized) drill.handleKeystroke(key);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);

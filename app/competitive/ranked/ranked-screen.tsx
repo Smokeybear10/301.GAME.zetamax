@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { normalizeKey } from "@/lib/drill/keys";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ZETAMAC_DEFAULTS, currentStreak, type Problem, type RoundResult } from "@/lib/drill";
 import { useDrill } from "@/lib/use-drill";
@@ -114,16 +115,17 @@ export function RankedScreen() {
     if (start.phase !== "ready") return;
     const handler = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const key = normalizeKey(e);
       const recognized =
-        DIGIT_KEYS.has(e.key) ||
-        e.key === KEYBINDS.submit ||
-        e.key === KEYBINDS.skip ||
-        e.key === KEYBINDS.delete;
+        DIGIT_KEYS.has(key) ||
+        key === KEYBINDS.submit ||
+        key === KEYBINDS.skip ||
+        key === KEYBINDS.delete;
       const idle = state.status === "idle";
       if (!recognized && !idle) return;
-      if (e.key.length === 1 || recognized) e.preventDefault();
+      if (key.length === 1 || recognized) e.preventDefault();
       drill.start();
-      if (recognized) drill.handleKeystroke(e.key);
+      if (recognized) drill.handleKeystroke(key);
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
